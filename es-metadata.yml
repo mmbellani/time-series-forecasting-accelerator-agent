@@ -1,0 +1,8 @@
+schemaVersion: 0.0.1
+isProduction: false
+accountableOwners:
+  service: a8c689d7-6201-4709-8008-209196bdba21
+routing:
+  defaultAreaPath:
+    org: DataandAISAT
+    path: AI-Solution-Accelerator
