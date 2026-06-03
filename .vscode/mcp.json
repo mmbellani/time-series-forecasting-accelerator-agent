@@ -1,0 +1,10 @@
+{
+    "servers": { 
+    "MS Fabric MCP Server": {
+            "type": "stdio",
+            "command": "uvx",
+            "args": ["ms-fabric-mcp-server[sql,telemetry]"],
+            "env": {}
+        }
+    }
+}
