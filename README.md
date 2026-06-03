@@ -1,6 +1,7 @@
 # Time Series Forecasting Accelerator Agent
 
 A production-ready pipeline for forecasting multiple time series on **Microsoft Fabric**.
+
 **IMPORTANT** If you need to run a local demo without Fabric, please refer to README for DEMO.md
 
 ## What It Does
