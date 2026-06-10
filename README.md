@@ -246,7 +246,7 @@ You can still use the accelerator and the profiler, but you need to setup new in
 
 - [Lancaster Centre For Marketing Analytics and Forecasting](https://www.lancaster.ac.uk/lums/research/areas-of-expertise/centre-for-marketing-analytics-and-forecasting/)
 
-- [Methods for Intermittent Demand Forecasting](https://www.lancaster.ac.uk/pg/waller/pdfs/Intermittent_Demand_Forecasting.pdf)
+- [Methods for Intermittent Demand Forecasting](https://eprints.lancs.ac.uk/id/eprint/48847/1/Document.pdf)
 
 ##### Methods to forecast intermittent time series (not yet implemented in this accelerator):​
 ###### Constant
