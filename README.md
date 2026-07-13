@@ -12,6 +12,7 @@ A production-ready pipeline for forecasting multiple time series on **Microsoft 
   - [Requirements](#requirements)
 - [Training on Time Series Forecasting and the Methodology Used](#training-on-time-series-forecasting-and-the-methodology-used)
   - [Overview](#overview)
+    - [The forecaster's toolbox](#the-forecasters-toolbox)
   - [If I am new to demand forecasting, how can this accelerator help me? What should I do to use it?](#if-i-am-new-to-demand-forecasting-how-can-this-accelerator-help-me-what-should-i-do-to-use-it)
     - [What do I need in terms of time series data to use this accelerator?](#what-do-i-need-in-terms-of-time-series-data-to-use-this-accelerator)
     - [Why might this accelerator be useful for you](#why-might-this-accelerator-be-useful-for-you)
@@ -104,6 +105,9 @@ Time series modelling is defined as the combination of:
 
 Each model is optimized to better fit the training dataset and forecast the target variable: from energy consumption to spare parts demand. Classification or Clustering profile of time series data helps in defining the best fitting model in terms of choice of regressors (calendar variables or temperatures), forecasting algorithm (ARIMA vs Exponential smoothing) and train set (one year or just few days of data). 
 
+### The forecaster's toolbox
+For readers who want a solid, freely available grounding in the methodology behind this accelerator, we recommend the "forecaster's toolbox" described by Rob J. Hyndman and George Athanasopoulos in [Forecasting: Principles and Practice (3rd ed)](https://otexts.com/fpp3/toolbox.html). The toolbox is a set of general-purpose tools that recur across virtually every forecasting problem and that map directly onto the stages of this pipeline. It covers: a **tidy forecasting workflow** (tidy the data, visualise, specify a model, estimate, evaluate, and forecast); a family of **simple benchmark methods** — mean, naïve, seasonal naïve, and drift — that establish the baseline any serious model must beat; **fitted values and residual diagnostics** to check whether a method has extracted all the available signal (residuals should be uncorrelated and have zero mean); **prediction intervals and distributional forecasts** to quantify uncertainty rather than reporting a single point; **transformations** (e.g. Box-Cox) and **forecasting with decomposition** to handle changing variance, trend, and seasonality; and rigorous **accuracy evaluation** using scale-dependent and scale-free errors (MAE, RMSE, MAPE, MASE) together with **time series cross-validation** on a rolling origin. These same principles — establish a benchmark, diagnose residuals, quantify uncertainty, and validate out-of-sample — underpin the profiling, clustering, feature-engineering, and train/validate steps of this accelerator.
+
 ## If I am new to demand forecasting, how can this accelerator help me? What should I do to use it?
 ### What do I need in terms of time series data to use this accelerator?
 This accelerator deals with so-called **panel data**. In statistics and econometrics, panel data or longitudinal data is a collection of data that contains observations about different cross sections (groups or ids) that is assembled over intervals in time and ordered chronologically. Examples of groups that may make up panel data series include countries, firms, individuals, or demographic groups. 
@@ -152,17 +156,17 @@ This accelerator provides you with 6 Notebooks that drives you through the essen
 #### Notebooks
 Notebooks are available in the src/notebooks folder and provide guidance to the agent.
 #### 1. Data Preparation
-[Fabric 01 DataPreparation](/src/notebooks/Fabric%2001%20DataPreparation.ipynb) Cleans raw data, fills time gaps, handles missing values, and produces a ready-to-analyze table
+[01 DataPreparation](/src/notebooks/01%20DataPreparation.ipynb) Cleans raw data, fills time gaps, handles missing values, and produces a ready-to-analyze table
 #### 2. EDA
-[Fabric 02 ExploratoryDataAnalysis](src/notebooks/Fabric%2002%20ExploratoryDataAnalysis.ipynb) Generates summary statistics, visualizations, and feature-level analysis to understand patterns
+[02 ExploratoryDataAnalysis](src/notebooks/02%20ExploratoryDataAnalysis.ipynb) Generates summary statistics, visualizations, and feature-level analysis to understand patterns
 #### 3. Profiling
-[Fabric 03 ProfilingIntermittent](src/notebooks/Fabric%2003%20ProfilingIntermittent.ipynb) Profiles time series to be regular, intermittent, lumpy, erratic, unforecastable in terms of time, unforecastable in terms of quantity, constant and constant at zero
+[03 ProfilingIntermittent](src/notebooks/Fabric%2003%20ProfilingIntermittent.ipynb) Profiles time series to be regular, intermittent, lumpy, erratic, unforecastable in terms of time, unforecastable in terms of quantity, constant and constant at zero
 #### 4. Clustering
-[Fabric 04 Clustering](src/notebooks/Fabric%2004%20Clustering.ipynb) Groups similar series together using K-Means so models can be trained per cluster
+[04 Clustering](src/notebooks/04%20Clustering.ipynb) Groups similar series together using K-Means so models can be trained per cluster
 #### 5. Feature Engineering 
-[Fabric 05 FeatureEngineering](src/notebooks/Fabric%2005%20FeatureEngineering.ipynb) Creates lag features, rolling statistics, and calendar features to feed the forecasting model
+[05 FeatureEngineering](src/notebooks/05%20FeatureEngineering.ipynb) Creates lag features, rolling statistics, and calendar features to feed the forecasting model
 #### 6. Train/Tune
-[Fabric 06 TrainTestSelectTune](src/notebooks/Fabric%2006%20TrainTestSelectTune.ipynb) Trains LightGBM models per cluster and tunes hyperparameters with Optuna, producing final forecasts
+[06 TrainTestSelectTune](src/notebooks/06%20TrainTestSelectTune.ipynb) Trains LightGBM models per cluster and tunes hyperparameters with Optuna, producing final forecasts
 
 ## How should I validate a model?
 You can validate your model using the following KPIs (implemented, please refer to the EnergyPredictionScoring Notebooks and to the Functions section below):

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is a **Time Series Forecasting Accelerator** for HPE FP&A revenue forecasting. It ships a 6-notebook pipeline that cleans data, profiles each series, clusters similar series, engineers features, and trains per-cluster **LightGBM** models via `mlforecast`, plus a library of pluggable [skills](Skills-Overview) for alternative models and diagnostics.
+This project is the **Time Series Forecasting Accelerator Agent**. It ships a 6-notebook pipeline that cleans data, profiles each series, clusters similar series, engineers features, and trains per-cluster **LightGBM** models via `mlforecast`, plus a library of pluggable [skills](Skills-Overview) for alternative models and diagnostics.
 
 ## Repository layout
 

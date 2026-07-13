@@ -1,6 +1,6 @@
-# FP&A Revenue Forecasting — Phase 2 Wiki
+# Time Series Forecasting Accelerator Agent Wiki
 
-Welcome to the documentation wiki for the **HPE FP&A Revenue Forecasting – Phase 2** project: a Time Series Forecasting Accelerator built on a 6-notebook pipeline (LightGBM + `mlforecast`) with a library of pluggable analysis and benchmarking **skills**.
+Welcome to the documentation wiki for the **Time Series Forecasting Accelerator Agent** project: a Time Series Forecasting Accelerator built on a 6-notebook pipeline (LightGBM + `mlforecast`) with a library of pluggable analysis and benchmarking **skills**.
 
 ## What's here
 

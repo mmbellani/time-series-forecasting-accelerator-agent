@@ -1,4 +1,4 @@
-### 📊 FP&A Revenue Forecasting
+### 📊 Time Series Forecasting Accelerator Agent
 
 - [Home](Home)
 - [Getting Started](Getting-Started)
