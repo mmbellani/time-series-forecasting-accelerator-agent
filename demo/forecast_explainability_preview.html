@@ -1,0 +1,43 @@
+<!doctype html><html><head><meta charset="utf-8"><title>forecast_explainability.md</title><style>body{font-family:Segoe UI,Aptos,sans-serif;margin:32px;line-height:1.55;color:#242424;max-width:1120px}h1,h2,h3{color:#111}code{background:#f3f2f1;padding:2px 4px;border-radius:4px}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #d1d1d1;padding:8px;text-align:left;vertical-align:top}th{background:#f7f7f7}.path{color:#666;font-size:13px;margin-bottom:20px}blockquote{border-left:4px solid #8a8886;margin:16px 0;padding:8px 14px;background:#faf9f8;color:#323130}</style></head><body><div class="path">Source: C:\Users\mabellani\REPOSITORY\FORECASTING\time-series-forecasting-accelerator-agent\.output\supermarket_net_sales_forecast_20260603\post_forecasting\forecast_explainability.md<br>Rendered: 2026-09-25 12:28:35</div><h1>Forecast Explainability — supermarket_net_sales_forecast</h1>
+<p>_Phase 6, Step 1 (forecast-explainability). Generated from a read-only reproduction of</p>
+<p>Notebook 06&#x27;s selected model. No retraining or retuning was performed._</p>
+<h2>Scope and configuration (as executed in the live Notebook 06)</h2>
+<table><tr><th>Attribute</th><th>Value</th></tr><tr><td>Selected transform</td><td><code>identity</code> (selection metric MAE)</td></tr><tr><td>Model family</td><td>LightGBM (<code>LGBMRegressor</code>, random_state=42) via MLForecast</td></tr><tr><td>Frequency</td><td><code>W-MON</code></td></tr><tr><td>Generated lags</td><td><code>lag1</code>, <code>lag2</code></td></tr><tr><td>Calendar features</td><td><code>year</code>, <code>month</code>, <code>week</code></td></tr><tr><td>Static features</td><td>15 store/market/competitor attributes incl. <code>BASELINE_WEEKLY_SALES</code>, <code>STORE_ARCHETYPE</code>, <code>REGION</code>, <code>profile_cluster</code> (all <code>category</code> dtype)</td></tr><tr><td>Model scopes</td><td>global + 5 per-cluster (<code>0.0</code>, <code>1.0</code>, <code>2.0</code>, <code>3.0</code>, <code>erratic</code>)</td></tr><tr><td>Training window</td><td>2024-04-25 to 2025-02-27</td></tr><tr><td>Point-explanation date</td><td>2025-03-17 (last fully-observed week)</td></tr></table>
+<blockquote><strong>Important divergences from the completion report (Phase 4.6 / CP-0013).</strong> The live notebook<br>now uses <strong>W-MON</strong> (report said W-THU), the <strong>identity</strong> transform (report said std),<br>a reduced <strong>18-column</strong> feature set of mostly static store/market attributes plus calendar and<br>two short lags (no dynamic media/weather/economic regressors, no lag52), and clusters<br><code>0.0/1.0/2.0/3.0/erratic</code> with 19/11/15/3/2 stores (report said erratic=12 and different<br>cluster sizes). <code>BASELINE_WEEKLY_SALES</code> is <strong>included</strong> as a feature (the report had excluded it<br>as collinear). These should be confirmed with the data scientist.</blockquote>
+<h2>Global feature importance (gain = headline, split = secondary)</h2>
+<p>Gain % by feature family across scopes:</p>
+<table><tr><th>Family</th><th>cluster_0.0</th><th>cluster_1.0</th><th>cluster_2.0</th><th>cluster_3.0</th><th>cluster_erratic</th><th>global</th></tr><tr><td>calendar</td><td>36.0</td><td>34.4</td><td>38.9</td><td>22.2</td><td>72.5</td><td>6.0</td></tr><tr><td>categorical</td><td>1.6</td><td>0.1</td><td>1.1</td><td>0.0</td><td>0.0</td><td>1.4</td></tr><tr><td>lag</td><td>51.9</td><td>55.0</td><td>50.3</td><td>36.9</td><td>26.3</td><td>75.4</td></tr><tr><td>static</td><td>10.5</td><td>10.4</td><td>9.8</td><td>40.9</td><td>1.2</td><td>17.2</td></tr></table>
+<p>Top features — global model:</p>
+<table><tr><th>Feature</th><th>Family</th><th>Gain %</th><th>Split %</th></tr><tr><td>lag1</td><td>lag</td><td>74.8</td><td>15.1</td></tr><tr><td>STORE_SELLING_AREA_SQFT</td><td>static</td><td>16.3</td><td>7.5</td></tr><tr><td>week</td><td>calendar</td><td>4.9</td><td>43.5</td></tr><tr><td>profile_cluster</td><td>categorical</td><td>1.1</td><td>0.6</td></tr><tr><td>month</td><td>calendar</td><td>0.8</td><td>9.8</td></tr><tr><td>lag2</td><td>lag</td><td>0.6</td><td>10.6</td></tr><tr><td>COMPETITOR_DISCOUNT_A_PRESENT</td><td>static</td><td>0.4</td><td>1.2</td></tr><tr><td>MARKET_SHARE_AREA_POSTAL</td><td>static</td><td>0.3</td><td>1.4</td></tr></table>
+<p><strong>Read:</strong> the global model is driven primarily by the <strong>lag</strong> family — almost entirely <code>lag1</code></p>
+<p>(recent-history autocorrelation) — with <code>STORE_SELLING_AREA_SQFT</code> the leading static driver and</p>
+<p><code>week</code> the leading calendar signal. Note <code>week</code> has the <strong>highest split share</strong> but low gain: it is</p>
+<p>used in many splits for fine adjustments but contributes little accuracy on its own. Report gain as</p>
+<p>the headline; split is a secondary &quot;how often used&quot; signal only.</p>
+<h2>Per-cluster differences</h2>
+<ul><li>Clusters <code>0.0</code>, <code>1.0</code>, <code>2.0</code>: lag-led (~50-55% gain) with strong calendar (~34-39%) — typical</li></ul>
+<p>  seasonal grocery behaviour.</p>
+<ul><li>Cluster <code>3.0</code> (3 stores): <strong>static-led</strong> (40.9% gain) — small-sample store-identity effects</li></ul>
+<p>  dominate; interpret cautiously.</p>
+<ul><li>Cluster <code>erratic</code> (2 stores): <strong>calendar-led</strong> (72.5% gain), weak lag — treat as low-confidence</li></ul>
+<p>  given only 2 series.</p>
+<ul><li><code>profile_cluster</code> is constant within each per-cluster model, so it contributes ~0 there (it only</li></ul>
+<p>  carries signal in the global model).</p>
+<h2>Point-level explanations (2025-03-17, all 50 stores)</h2>
+<p>Additive <code>pred_contrib</code> decomposition (contributions + base value = raw prediction; additivity</p>
+<p>verified to 1e-6). Mean absolute contribution by family, global model:</p>
+<table><tr><th>Family</th><th>Mean</th><th>contribution</th><th>($)</th></tr><tr><td>lag</td><td>40,987</td></tr><tr><td>calendar</td><td>21,796</td></tr><tr><td>static</td><td>5,982</td></tr><tr><td>categorical</td><td>2,743</td></tr></table>
+<p><strong>Read:</strong> at the last observed week, recent-history <strong>lag</strong> terms move individual store predictions</p>
+<p>most, followed by <strong>calendar</strong> (seasonal position) and then <strong>static</strong> store attributes. This</p>
+<p>mirrors the global gain ranking, so the model&#x27;s per-store behaviour is consistent with its overall</p>
+<p>driver profile. Per-store and per-cluster details are in <code>point_explanations.csv</code>.</p>
+<h2>Caveats and limitations</h2>
+<ul><li><strong>Association, not causation.</strong> Per CP-0013, service, pricing, market-share, loyalty, media, and</li></ul>
+<p>  volume features are treated as associative operational signals. (Most are not even in the current</p>
+<p>  feature set.) Importance/contribution values describe the model, not real-world causal levers.</p>
+<ul><li><strong><code>BASELINE_WEEKLY_SALES</code></strong> is a near-target sales proxy; its presence can inflate apparent</li></ul>
+<p>  accuracy and mask other drivers. Confirm whether it should remain a feature.</p>
+<ul><li><strong>Small clusters</strong> (<code>3.0</code>=3 stores, <code>erratic</code>=2 stores) yield low-confidence importances.</li><li><strong>Selected transform is <code>identity</code></strong>; importances reflect the untransformed-target model.</li><li>Point explanations use realized lags at 2025-03-17 because the OOS horizon (2025-03-24) has no</li></ul>
+<p>  observed feature row; the report&#x27;s 2025-03-27 does not exist in this W-MON run.</p>
+<h2>Artifacts</h2>
+<table><tr><th>File</th><th>Description</th></tr><tr><td><code>feature_importance.csv</code></td><td>Gain/split importance by feature and family, all scopes</td></tr><tr><td><code>point_explanations.csv</code></td><td>Per-store additive <code>pred_contrib</code> at 2025-03-17, all scopes</td></tr><tr><td><code>forecast_explainability.md</code></td><td>This report</td></tr></table></body></html>
