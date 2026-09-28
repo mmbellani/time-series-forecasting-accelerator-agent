@@ -1,0 +1,51 @@
+<!doctype html><html><head><meta charset="utf-8"><title>hierarchical_reconciliation.md</title><style>body{font-family:Segoe UI,Aptos,sans-serif;margin:32px;line-height:1.55;color:#242424;max-width:1120px}h1,h2,h3{color:#111}code{background:#f3f2f1;padding:2px 4px;border-radius:4px}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #d1d1d1;padding:8px;text-align:left;vertical-align:top}th{background:#f7f7f7}.path{color:#666;font-size:13px;margin-bottom:20px}blockquote{border-left:4px solid #8a8886;margin:16px 0;padding:8px 14px;background:#faf9f8;color:#323130}</style></head><body><div class="path">Source: C:\Users\mabellani\REPOSITORY\FORECASTING\time-series-forecasting-accelerator-agent\.output\supermarket_net_sales_forecast_20260603\post_forecasting\hierarchical_reconciliation.md<br>Rendered: 2026-09-25 12:42:40</div><h1>Hierarchical Reconciliation - supermarket_net_sales_forecast</h1>
+<p><em>Phase 6, Step 3.2. Read-only bottom-up aggregation of the approved Notebook 06 walk-forward predictions; no model or source table was modified.</em></p>
+<h2>Approved scope</h2>
+<table><tr><th>Attribute</th><th>Value</th></tr></table>
+<table></table>
+<table><tr><th>Hierarchy</th><th><code>STORE_ARCHETYPE -&gt; STORE_LOCATION_ID</code></th></tr></table>
+<table><tr><th>Target level</th><th><code>STORE_ARCHETYPE</code></th></tr></table>
+<table><tr><th>Prediction</th><th><code>y_hat_identity</code></th></tr></table>
+<table><tr><th>Window</th><th>2025-01-27 to 2025-03-17</th></tr></table>
+<table><tr><th>Coverage</th><th>350 rows, 50 stores, 7 available dates</th></tr></table>
+<table><tr><th>Missing date treatment</th><th>2025-03-03 remains absent; no imputation</th></tr></table>
+<table><tr><th>Error convention</th><th>actual - forecast; positive = under-forecast</th></tr></table>
+<h2>Hierarchy validation</h2>
+<p>Hierarchy has <strong>2 level(s)</strong>: <code>STORE_ARCHETYPE</code> → <code>STORE_LOCATION_ID</code> (top → bottom).</p>
+<p>Reconciling <strong>bottom-up</strong> to the <strong>STORE_ARCHETYPE</strong> level.</p>
+<p>Level shape:</p>
+<ul><li><code>Total</code>: 1 node(s), ~1.0 children per parent.</li><li><code>STORE_ARCHETYPE</code>: 3 node(s), ~3.0 children per parent.</li><li><code>STORE_LOCATION_ID</code>: 50 node(s), ~16.7 children per parent.</li></ul>
+<p>Validation passed: every one of the 50 stores maps to exactly one non-null archetype. The hierarchy contains 3 archetypes (<code>large</code>, <code>medium</code>, <code>small</code>) and 50 base stores.</p>
+<h2>Forecast composition</h2>
+<p>Aggregate forecast at <strong>STORE_ARCHETYPE</strong> = <strong>167,664,207 USD</strong> across 3 node(s).</p>
+<p>The top 3 node(s) make up <strong>100%</strong> of the aggregate; ~<strong>3 node(s)</strong> account for 80%.</p>
+<p>Largest contributors to the aggregate forecast:</p>
+<ul><li><strong>medium</strong>: 94,468,409 USD (56.3%)</li><li><strong>large</strong>: 38,285,882 USD (22.8%)</li><li><strong>small</strong>: 34,909,916 USD (20.8%)</li></ul>
+<p>The completed explainability analysis shows that the global forecast is primarily lag-led (75.4% of gain, almost entirely <code>lag1</code>), with static store attributes and calendar position providing secondary signal. This evidence describes model behavior and does not establish business causation.</p>
+<table><tr><th>Archetype</th><th>Forecast total</th><th>Forecast share</th><th>Signed error</th><th>Direction</th><th>Gross-error share</th></tr></table>
+<table></table>
+<table><tr><th>large</th><th>$38,285,882</th><th>22.8%</th><th>$577,781</th><th>under-forecast</th><th>18.2%</th></tr><tr><td>medium</td><td>$94,468,409</td><td>56.3%</td><td>$1,795,845</td><td>under-forecast</td><td>61.5%</td></tr><tr><td>small</td><td>$34,909,916</td><td>20.8%</td><td>$610,459</td><td>under-forecast</td><td>20.3%</td></tr></table>
+<p>![Archetype aggregate fit](reconciliation_aggregate_fit.png)</p>
+<p>![Forecast contribution by archetype](reconciliation_contributions.png)</p>
+<p>The contribution ranking is arithmetic composition, not a causal explanation. Feature-weight evidence from the completed explainability step remains associative.</p>
+<h2>Error propagation</h2>
+<p>Base-level accuracy: MAPE <strong>6.7%</strong>, WMAPE <strong>6.1%</strong>, ME <strong>8,526 USD</strong>.</p>
+<p>Aggregate (Total) accuracy: MAPE <strong>4.1%</strong>, WMAPE <strong>4.1%</strong>, ME <strong>426,298 USD</strong> → the aggregate is <strong>under-forecasting (actuals exceed forecasts)</strong>.</p>
+<p><strong>71% of gross base error cancels</strong> at the STORE_ARCHETYPE level — base misses are largely noise that averages out, so the aggregate is more reliable than the base series.</p>
+<p>Nodes driving the net error at <strong>STORE_ARCHETYPE</strong> (signed):</p>
+<ul><li><strong>medium</strong>: 1,795,845 USD (under-forecast), 61.5% of gross error.</li><li><strong>small</strong>: 610,459 USD (under-forecast), 20.3% of gross error.</li><li><strong>large</strong>: 577,781 USD (under-forecast), 18.2% of gross error.</li></ul>
+<p>The completed error analysis identifies 2025-03-17 as the worst observed date and confirms that all three archetypes retain under-forecast bias. Checkpoint CP-0017 approved <code>medium</code> as the dominant forecast contributor and aggregate error driver.</p>
+<table><tr><th>Level</th><th>n</th><th>ME</th><th>MAE</th><th>RMSE</th><th>MAPE</th><th>WMAPE</th><th>Cancellation</th></tr></table>
+<table></table>
+<table><tr><th>Total</th><th>7</th><th>$426,298</th><th>$1,011,135</th><th>$1,256,645</th><th>4.08%</th><th>4.15%</th><th>71.2%</th></tr><tr><td>STORE_ARCHETYPE</td><td>21</td><td>$142,099</td><td>$345,275</td><td>$496,067</td><td>3.99%</td><td>4.25%</td><td>71.2%</td></tr><tr><td>STORE_LOCATION_ID</td><td>350</td><td>$8,526</td><td>$29,578</td><td>$37,233</td><td>6.66%</td><td>6.07%</td><td>64.9%</td></tr></table>
+<p>![Error by hierarchy level](reconciliation_error_by_level.png)</p>
+<p>![Archetype error propagation](reconciliation_error_propagation.png)</p>
+<h2>Coherence</h2>
+<p>Bottom-up reconciliation is coherent by construction. The maximum absolute difference between summed store forecasts/actuals and their archetype roll-up is <strong>$0.000000</strong>, within the $10^{-6}$ tolerance. No separately trained direct archetype model was supplied, so MinT/direct-model gap analysis is not applicable.</p>
+<h2>Artifacts</h2>
+<table><tr><th>File</th><th>Description</th></tr></table>
+<table></table>
+<table><tr><th><code>reconciled_forecasts.csv</code></th><th>Actuals, forecasts, and errors by archetype/date</th></tr></table>
+<table><tr><th><code>error_by_level.csv</code></th><th>Accuracy and cancellation from Total to archetype to store</th></tr></table>
+<table><tr><th><code>node_contributions.csv</code></th><th>Archetype forecast composition and signed error contribution</th></tr></table>
+<table><tr><th><code>reconciliation_*.png</code></th><th>Aggregate fit, composition, level error, and propagation charts</th></tr></table></body></html>

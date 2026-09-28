@@ -1,10 +1,63 @@
 {
-    "servers": { 
-    "MS Fabric MCP Server": {
+    // VS Code reads this as JSONC (comments allowed).
+    "inputs": [
+        {
+            // Databricks Personal Access Token (User Settings > Developer > Access tokens).
+            // Alternatively, remove the "headers" blocks below and let VS Code drive Databricks OAuth.
+            "id": "databricks_token",
+            "type": "promptString",
+            "description": "Databricks Personal Access Token (dev workspace)",
+            "password": true
+        }
+    ],
+    "servers": {
+        "MS Fabric MCP Server": {
             "type": "stdio",
             "command": "uvx",
             "args": ["ms-fabric-mcp-server[sql,telemetry]"],
             "env": {}
+        },
+
+        // ---- Databricks managed MCP (hosted by the workspace) -------------------
+        // Unity Catalog functions in cfin_revfcst.sch_rptng exposed as tools.
+        // Requires managed MCP enabled on the workspace + UC functions registered.
+        "Databricks UC Functions": {
+            "type": "http",
+            "url": "https://adb-7405604759298090.10.azuredatabricks.net/api/2.0/mcp/functions/cfin_revfcst/sch_rptng",
+            "headers": {
+                "Authorization": "Bearer ${input:databricks_token}"
+            }
+        },
+
+        // Genie space = natural-language querying over your tables (best fit for
+        // schema resolution + ad-hoc EDA aggregations). Replace <GENIE_SPACE_ID>
+        // with the id of a Genie space built on cfin_revfcst.sch_rptng.
+        "Databricks Genie": {
+            "type": "http",
+            "url": "https://adb-7405604759298090.10.azuredatabricks.net/api/2.0/mcp/genie/01f17633bd5218cf97dccc242b905ef4",
+            "headers": {
+                "Authorization": "Bearer ${input:databricks_token}"
+            }
+        },
+
+        // ---- Databricks local (stdio) MCP server --------------------------------
+        // Runs a server locally that reuses your Databricks CLI auth (the same
+        // profile databricks.yml targets). No hosted endpoint / managed-MCP flag
+        // needed. Community servers exist on PyPI (e.g. run via uvx); CONFIRM the
+        // exact package name before enabling. To use: remove the leading "//" on
+        // the lines below and add a comma after the "Databricks Genie" block above.
+        //
+        "Databricks (local, CLI profile)": {
+            "type": "stdio",
+            "command": "uvx",
+            "args": ["databricks-mcp"],
+             "env": {
+        // Reuse an existing profile from ~/.databrickscfg ...
+        "DATABRICKS_CONFIG_PROFILE": "DEFAULT",
+        // ... or set host + token explicitly instead of the profile:
+        "DATABRICKS_HOST": "https://adb-7405604759298090.10.azuredatabricks.net",
+        "DATABRICKS_TOKEN": "${input:databricks_token}"
+        }
         }
     }
 }

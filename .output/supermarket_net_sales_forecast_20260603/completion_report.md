@@ -2,7 +2,7 @@
 
 **Scenario:** supermarket_net_sales_forecast
 **Created:** 2026-06-03
-**Last Updated:** 2026-06-03 (Phase 5 Complete — all notebooks executed successfully)
+**Last Updated:** 2026-09-23 (Phase 6 — Checkpoint 6.2 Completed)
 
 ---
 
@@ -13,6 +13,7 @@
 - [x] Phase 3: Customization Planning
 - [x] Phase 4: Notebook Generation & Validation
 - [x] Phase 5: Finalization & Delivery
+- [ ] Phase 6: Post-Forecasting Analysis (Checkpoint 6.2 Completed — Error Analysis pending)
 
 ---
 
@@ -441,6 +442,85 @@ The user initially mentioned data starts Monday, but all 104 WEEK_START_DT value
 - Pre-computed lag/rolling columns will be DROPPED; MLForecast regenerates lags [4, 8, 13, 26]
 - Effective training window after lag26 warm-up: ~23 weeks per series (1,150 rows)
 - lag52 dropped (was top feature at 0.7994 importance, but incompatible with 49-week feature table)
+
+### CP-0013
+
+| Field | Value |
+|------|-------|
+| Status | Completed |
+| Phase | 6 |
+| Notebook | 06 TrainTestSelectTune |
+| Cell/Step | Checkpoint 6.1 — Confirm Explainability Scope |
+
+**Raw Checkpoint Text:**
+> Present the available models, forecast columns, clusters, feature families, and explainable date range. Confirm whether explainability should cover the selected model, all variants, or selected clusters/models; identify points requiring local explanations; and confirm ambiguous business feature meanings.
+
+**Diagnostics Computed:**
+- Notebook 06 completed successfully and selected the `std` (`LocalStandardScaler`) LightGBM transform.
+- Available in the completed notebook run: one global LightGBM model plus five per-cluster LightGBM models (`erratic`, `regular_0`, `regular_1`, `regular_2`, `regular_3`). The per-cluster set was recommended based on weighted MAE (27,080 versus 27,991 globally; 3.3% lower).
+- The forecast table is long-form rather than `y_hat_*` wide-form: `FORECAST_VALUE` is identified by `MODEL_TYPE` (`global` or `cluster_<profile_cluster>`) and `TRANSFORM` (`std`).
+- Forecast/explainable holdout dates are 2025-03-06, 2025-03-13, 2025-03-20, and 2025-03-27 across 50 stores.
+- Model-generated lag features are `lag4`, `lag8`, `lag13`, and `lag26`. Other feature families include calendar, static store/competitor attributes, holiday/event flags, and dynamic service, discount/pricing, loyalty, weather, economic, media, volume, and market features.
+- Notebook 06 retained 14 static and 81 dynamic input columns after dropping Notebook 05's precomputed lag/rolling columns; MLForecast then generated the four lag features internally.
+- The completed notebook did not persist `best_model` or `results_cluster` to MLflow/files. Only forecasts were saved, so gain/split importance and `pred_contrib` require access to a still-live notebook session or a read-only rerun of the existing Notebook 06 fit context. No retraining or retuning will be performed.
+- Fabric OneLake metadata checks were attempted on 2026-09-22 but the restored workspace/lakehouse endpoint returned HTTP 404, so current live table and session availability could not be verified.
+
+**Questions Asked:**
+1. Should explainability cover (A) the recommended five per-cluster models only, (B) the global model only, (C) both global and per-cluster models, or (D) selected clusters/models?
+2. Which clusters, store IDs, or forecast dates need point-level explanations? The available dates are 2025-03-06 through 2025-03-27; selecting a small set of business-relevant or high-error points is recommended.
+3. Please confirm the intended business meaning of the potentially ambiguous feature groups, especially `SERVICE_GAP_*`, `DISCOUNT_*`/`PRICE_INDEX_*`, `MARKET_SHARE_AREA_POSTAL`, loyalty measures, and media/volume measures. Should any be treated only as associative operational signals rather than controllable forecast drivers?
+
+**User Answers:**
+1. Scope C — explain both the global model and all five per-cluster models.
+2. Explain the last week / last available forecast date: 2025-03-27, across all stores unless narrowed later.
+3. Yes — treat service, pricing, market-share, loyalty, media, and volume features as associative operational signals, not proven causal or necessarily controllable drivers.
+
+**Continuation:** `continue` received on 2026-09-22. Checkpoint completed; resume after Checkpoint 6.1 in a new chat.
+
+### CP-0014
+
+| Field | Value |
+|------|-------|
+| Status | ✅ Completed |
+| Phase | 6 |
+| Notebook | 06 TrainTestSelectTune |
+| Cell/Step | Checkpoint 6.2 — Review Explainability Findings and Select Error Window |
+
+**Raw Checkpoint Text:**
+> Present the leading feature families, cluster differences, point-level drivers, limitations, and the available actual-versus-forecast date range. Confirm the error time frame, whether to analyze the selected best prediction only or all `y_hat_*` variants, and which calendar decompositions and business segments matter most. The error window must contain observed actuals and predictions.
+
+**Step 1.2 Explainability Findings (computed):**
+- Read-only reproduction of NB06's SELECTED model (`identity` transform, LightGBM, lags [1,2], date_features [year, month, week]) for global + 5 per-cluster scopes. No retraining/retuning.
+- Global gain %: lag 75.4 (lag1 74.8), static 17.2 (STORE_SELLING_AREA_SQFT 16.3), calendar 6.0 (week 4.9, highest split share but low gain), categorical 1.4 (profile_cluster).
+- Per-cluster: 0.0/1.0/2.0 lag-led (~50-55%) with calendar ~34-39%; cluster 3.0 (3 stores) static-led (40.9%); erratic (2 stores) calendar-led (72.5%). Low confidence for 3.0/erratic (tiny samples).
+- Point explanations (pred_contrib, 50 stores) at 2025-03-17 (last observed week); additivity verified to 1e-6. Mean |contribution|: lag $40,987 > calendar $21,796 > static $5,982 > categorical $2,743.
+- Artifacts saved: forecast_explainability.md, feature_importance.csv, point_explanations.csv.
+
+**Divergences from prior report (must confirm):**
+- Frequency is `W-MON` (report said W-THU). Selected transform is `identity` (report said std).
+- Feature set is 18 cols (mostly static store/market attributes + calendar + lag1/lag2); no dynamic media/weather/economic regressors and no lag52. `BASELINE_WEEKLY_SALES` is INCLUDED (report excluded it as collinear).
+- Clusters are 0.0/1.0/2.0/3.0/erratic with 19/11/15/3/2 stores (report: erratic=12 and different sizes).
+- Point-explanation date is 2025-03-17: the report's 2025-03-27 does not exist in the W-MON run and 2025-03-24 is a pure OOS point with no realized feature row.
+
+**Actual-vs-forecast coverage (candidate error windows; y_hat_identity/std/diff1 available; 0 missing/zero actuals):**
+- A) Full walk-forward w/ actuals 2024-04-29 → 2025-03-17: 2,300 rows, 50 stores, 46 dates.
+- B) True OOS holdout w/ actuals 2025-03-10 → 2025-03-17: 100 rows, 50 stores, 2 dates.
+- C) Last 8 observed weeks 2025-01-27 → 2025-03-17: 350 rows, 50 stores, 7 dates.
+- (Forecast horizon extends to 2025-03-24 but has no actuals; 50 rows unmatched.)
+
+**Questions Asked:**
+1. Which error time frame? A) full walk-forward (2024-04-29→2025-03-17), B) true OOS holdout (2025-03-10→2025-03-17), C) last 8 observed weeks (2025-01-27→2025-03-17), or D) a specific start/end.
+2. Compute errors for the selected best prediction (`y_hat_identity`) only, or compare all variants (identity/std/diff1)?
+3. Which calendar decompositions (month, ISO week, holiday/event weeks) and business segments (profile_cluster, REGION, STORE_ARCHETYPE) matter most?
+4. Are the W-MON/identity/feature-set/cluster divergences from the prior report expected, or should analysis pause to reconcile them?
+
+**User Answers:**
+1. Error window: **C — last 8 observed weeks (2025-01-27 → 2025-03-17)**; 350 rows, 50 stores, 7 dates.
+2. Model scope: **`y_hat_identity` only** (selected best prediction; no variant comparison).
+3. Decompositions/segments: **all segments** — calendar (month, ISO week, holiday/event weeks) and business segments (profile_cluster, REGION, STORE_ARCHETYPE).
+4. Divergences (W-MON vs W-THU, identity vs std, reduced 18-col feature set incl. BASELINE_WEEKLY_SALES, clusters 0.0/1.0/2.0/3.0/erratic): **expected** — proceed without reconciling to the prior report.
+
+**Continuation:** Answers received on 2026-09-23. Checkpoint 6.2 completed; resume at Step 2 (Error Analysis) in a new chat using the same completion-report path.
 
 ---
 
@@ -945,3 +1025,63 @@ All 6 notebooks executed successfully on Fabric workspace `ts-forecaster-ws1` wi
 | Lakehouse Attached | ts_mmm |
 
 ---
+
+## Phase 6: Post-Forecasting Analysis
+
+### Checkpoints
+- CP-0013 - Explainability scope (Completed)
+- CP-0014 - Explainability findings and error window (Completed)
+- Error findings (Not started)
+- Hierarchy definition and validation (Not started)
+- Reconciliation findings (Not started)
+
+### Forecast Explainability
+| Attribute | Value |
+|-----------|-------|
+| Model(s) | Global + 5 per-cluster LightGBM, SELECTED `identity` transform (read-only reproduction of live NB06) |
+| Prediction Column(s) | `y_hat_identity` (selected); `y_hat_std`, `y_hat_diff1` also available |
+| Clusters/Series | 50 stores; clusters 0.0 (19), 1.0 (11), 2.0 (15), 3.0 (3), erratic (2) |
+| Leading Feature Families | Global gain: lag 75.4% (lag1), static 17.2% (STORE_SELLING_AREA_SQFT), calendar 6.0% (week) |
+| Point Explanations | 50 stores at 2025-03-17; mean \|contribution\|: lag $40,987 > calendar $21,796 > static $5,982 |
+
+### Error Analysis
+| Attribute | Value |
+|-----------|-------|
+| Start Date | 2025-01-27 (Window C — last 8 observed weeks) |
+| End Date | 2025-03-17 |
+| Series Coverage | 50 stores × 7 dates = 350 rows (0 missing/zero actuals) |
+| Primary Metric | MAE / WMAPE (headline); scope `y_hat_identity`; segments profile_cluster + REGION + STORE_ARCHETYPE |
+| MAE | Pending |
+| MAPE | Pending |
+| ME | Pending |
+| RMSE | Pending |
+| WMAPE | Pending |
+| sMAPE | Pending |
+| Worst Buckets | Pending |
+
+### Hierarchical Reconciliation
+| Attribute | Value |
+|-----------|-------|
+| Hierarchy Levels | Pending Checkpoint 6.4 |
+| Target Level | Pending |
+| Hierarchy Valid | Pending |
+| Coherent | Pending |
+| Dominant Nodes | Pending |
+| Error Cancellation/Reinforcement | Pending |
+
+### Artifacts
+| Artifact | Status |
+|----------|--------|
+| post_forecasting/forecast_explainability.md | ✅ Complete (Step 1.2) |
+| post_forecasting/feature_importance.csv | ✅ Complete (Step 1.2) |
+| post_forecasting/point_explanations.csv | ✅ Complete (Step 1.2) |
+| post_forecasting/error_analysis.md | Not started (after CP-0014) |
+| post_forecasting/hierarchical_reconciliation.md | Not started |
+| post_forecasting/post_forecasting_analysis.md | Not started |
+
+### Limitations and Recommendations
+- Explainability was produced by a read-only reproduction of the live NB06 fit (identity transform); no models were retrained or retuned. Trained objects are still not persisted to disk/MLflow.
+- The live notebook state diverges materially from this report's Phase 4.6 record (W-MON vs W-THU, identity vs std, reduced 18-col feature set incl. BASELINE_WEEKLY_SALES, clusters 0.0/1.0/2.0/3.0/erratic). Reconcile before finalizing.
+- `BASELINE_WEEKLY_SALES` is a near-target proxy currently used as a feature; confirm whether it should remain.
+- Clusters 3.0 (3 stores) and erratic (2 stores) give low-confidence importances.
+- Fabric metadata access returned HTTP 404 earlier; analysis is running locally against the notebook kernel and local parquet/CSV outputs.

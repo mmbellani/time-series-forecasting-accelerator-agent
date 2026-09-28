@@ -1,0 +1,19 @@
+# This is a Declarative Automation Bundle definition for time-series-forecasting-accelerator-agent.
+# The Databricks extension requires databricks.yml configuration file.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+
+bundle:
+  name: time-series-forecasting-accelerator-agent
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://your-workspace-id.azuredatabricks.net
+
+  ## Optionally, there could be 'staging' or 'prod' targets here.
+  #
+  # prod:
+  #   workspace:
+  #     host: https://your-workspace-id.azuredatabricks.net
