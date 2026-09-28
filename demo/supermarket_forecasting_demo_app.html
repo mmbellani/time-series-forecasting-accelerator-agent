@@ -537,11 +537,11 @@ Then type continue.`;
   postAnalysisInput.focus();
 }
 function openCompletePostForecastingAnalysis(){
-  const reportPath='C:\\Users\\mabellani\\REPOSITORY\\FORECASTING\\time-series-forecasting-accelerator-agent\\.output\\supermarket_net_sales_forecast_20260603\\post_forecasting\\post_forecasting_analysis.md';
-  const reportUrl=`http://127.0.0.1:8766/post_forecasting_analysis_preview.html?t=${Date.now()}`;
+  const reportPath='post_forecasting_analysis_preview.html';
+  const reportUrl=`${reportPath}?t=${Date.now()}`;
   const report=document.createElement('div');
   report.className='msg agent';
-  report.textContent=`Opened complete post-forecasting analysis preview from source file:\n${reportPath}`;
+  report.textContent=`Opened complete post-forecasting analysis preview:\n${reportPath}`;
   postAnalysisOutput.appendChild(report);
   const win=window.open(reportUrl,'_blank');
   if(!win) agentRunStatus.textContent='Popup blocked. Allow popups to open the complete post-forecasting analysis preview.';
@@ -557,11 +557,11 @@ function submitPostAnalysisResponse(){
   postAnalysisOutput.appendChild(document.createElement('br'));
   postAnalysisOutput.appendChild(entry);
   if(response.toLowerCase().includes('continue')&&POST_ANALYSIS_STEP==='error-analysis'){
-    const reportPath='C:\\Users\\mabellani\\REPOSITORY\\FORECASTING\\time-series-forecasting-accelerator-agent\\.output\\supermarket_net_sales_forecast_20260603\\post_forecasting\\error_analysis.md';
-    const reportUrl=`http://127.0.0.1:8766/error_analysis_preview.html?t=${Date.now()}`;
+    const reportPath='error_analysis_preview.html';
+    const reportUrl=`${reportPath}?t=${Date.now()}`;
     const report=document.createElement('div');
     report.className='msg agent';
-    report.textContent=`Opened rendered Markdown preview from source file:\n${reportPath}\n\nNext step: forecast explainability.\nType continue to proceed to forecast explainability.`;
+    report.textContent=`Opened rendered Markdown preview:\n${reportPath}\n\nNext step: forecast explainability.\nType continue to proceed to forecast explainability.`;
     postAnalysisOutput.appendChild(report);
     const win=window.open(reportUrl,'_blank');
     if(!win) agentRunStatus.textContent='Popup blocked. Allow popups to open the Markdown preview.';
@@ -587,11 +587,11 @@ Should service, pricing, market-share, loyalty, media, and volume features be in
 agentRunStatus.textContent='Forecast explainability scope requested. Answer, then type continue to open forecast_explainability.md.';
 POST_ANALYSIS_STEP='forecast-explainability-report';
   } else if(response.toLowerCase().includes('continue')&&POST_ANALYSIS_STEP==='forecast-explainability-report'){
-const reportPath='C:\\Users\\mabellani\\REPOSITORY\\FORECASTING\\time-series-forecasting-accelerator-agent\\.output\\supermarket_net_sales_forecast_20260603\\post_forecasting\\forecast_explainability.md';
-const reportUrl=`http://127.0.0.1:8766/forecast_explainability_preview.html?t=${Date.now()}`;
+const reportPath='forecast_explainability_preview.html';
+const reportUrl=`${reportPath}?t=${Date.now()}`;
 const report=document.createElement('div');
 report.className='msg agent';
-report.textContent=`Opened rendered Markdown preview from source file:\n${reportPath}`;
+report.textContent=`Opened rendered Markdown preview:\n${reportPath}`;
 postAnalysisOutput.appendChild(report);
 const win=window.open(reportUrl,'_blank');
 if(!win) agentRunStatus.textContent='Popup blocked. Allow popups to open the forecast explainability preview.';
@@ -615,11 +615,11 @@ postAnalysisOutput.appendChild(checkpoint);
 agentRunStatus.textContent='Checkpoint 6.4 hierarchy choices requested.';
 POST_ANALYSIS_STEP='hierarchical-reconciliation-report';
   } else if(response.toLowerCase().includes('continue')&&POST_ANALYSIS_STEP==='hierarchical-reconciliation-report'){
-const reportPath='C:\\Users\\mabellani\\REPOSITORY\\FORECASTING\\time-series-forecasting-accelerator-agent\\.output\\supermarket_net_sales_forecast_20260603\\post_forecasting\\hierarchical_reconciliation.md';
-const reportUrl=`http://127.0.0.1:8766/hierarchical_reconciliation_preview.html?t=${Date.now()}`;
+const reportPath='hierarchical_reconciliation_preview.html';
+const reportUrl=`${reportPath}?t=${Date.now()}`;
 const report=document.createElement('div');
 report.className='msg agent';
-report.textContent=`Opened rendered Markdown preview from source file:\n${reportPath}`;
+report.textContent=`Opened rendered Markdown preview:\n${reportPath}`;
 postAnalysisOutput.appendChild(report);
 const win=window.open(reportUrl,'_blank');
 if(!win) agentRunStatus.textContent='Popup blocked. Allow popups to open the hierarchical reconciliation preview.';
