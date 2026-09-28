@@ -2,7 +2,7 @@
 
 A production-ready pipeline for forecasting multiple time series on **Microsoft Fabric** and **Databricks**.
 
-**IMPORTANT** If you need to run a local demo without Fabric, please refer to README for DEMO.md
+**IMPORTANT** If you need to run a local demo without Fabric, please refer to the [local demo setup guide](demo/mlads/README%20for%20DEMO.md). For the browser-based explainability walkthrough, see the [post-forecasting analysis demo guide](demo/README%20for%20POST%20FORECASTING%20ANALYSIS%20DEMO.md).
 
 - [Time Series Forecasting Accelerator Agent](#time-series-forecasting-accelerator-agent)
   - [What It Does](#what-it-does)

@@ -207,7 +207,7 @@ th { color: var(--cp-text-muted); font-weight: 700; }
           <h2>Intermittent demand profiling map</h2>
           <p class="muted">The profiler classifies each time series by demand intermittency and volatility: CV2 on the x-axis, ADI on the y-axis, and SDDI on the z-axis. This helps separate regular series from spikes, lumpy, erratic, constant, and unforecastable profiles before clustering regular series with K-Means.</p>
           <div class="profile-map">
-            <img src="profiling_cv2_adi_sddi_examples.png" alt="Profiling example map with CV2 on the x-axis, ADI on the y-axis, and SDDI on the z-axis">
+            <img src="../docs/images/intermittent_TS.png" alt="Intermittent demand profiling map">
             <dl class="definition-list">
               <div><dt>CV2</dt><dd>Coefficient of Variation Squared: demand-size volatility for non-zero demand periods. Higher CV2 means the quantity varies more when demand occurs.</dd></div>
               <div><dt>ADI</dt><dd>Average Inter-demand Interval: average number of periods between demand occurrences. Higher ADI means demand arrives less frequently.</dd></div>
