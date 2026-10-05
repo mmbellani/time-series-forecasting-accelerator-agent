@@ -1,8 +1,8 @@
 """End-to-end example: evaluate forecast accuracy and decompose error by calendar.
 
 Run this AFTER notebook 06 has produced the `<scenario>_forecasts` table (with `y` and
-one or more `y_hat_*` columns) and AFTER the `forecast-explainability` skill has been used
-to understand the model's drivers.
+one or more `y_hat_*` columns), and BEFORE `forecast-explainability` so the worst error
+buckets and points define the explainability scope.
 
 Two paths are shown:
   A) Inside a Fabric/Databricks notebook, reusing the in-memory forecast DataFrame.

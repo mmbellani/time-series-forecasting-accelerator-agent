@@ -22,8 +22,10 @@ the completion report, and stop at the relevant checkpoint. Do not retrain or re
 At the start of this phase:
 
 1. Read the completion report from the path provided by the user.
-2. Restore the workspace, lakehouse, scenario, column mappings, forecast horizon, output table
-   names, Notebook 06 model details, and execution status.
+2. Restore `data_source`, `notebook_prefix`, `source_details`, `execution_environment`,
+   `notebook_files`, `artifact_locations`, scenario, column mappings, forecast horizon,
+   Notebook 06 model details, and execution status. Restore workspace/Lakehouse IDs only
+   for Fabric. If the source contract is missing, confirm it rather than defaulting to Fabric.
 3. Verify that Notebook 06 completed successfully and identify:
    - The selected LightGBM model and any per-cluster LightGBM models
    - The selected `y_hat_*` prediction column and all alternative prediction columns
@@ -31,6 +33,15 @@ At the start of this phase:
    - The available forecast/actual date range
 4. Add a `Phase 6: Post-Forecasting Analysis` section to the completion report if it does not
    already exist. Do not overwrite prior phase content.
+
+Refer to Notebook 06 by its recorded source-prefixed filename:
+`<notebook_prefix> 06 TrainTestSelectTune.ipynb`, with `notebook_prefix` equal to the
+confirmed `Fabric`, `Databricks`, or `Local` data source. Resolve all notebook references
+through `notebook_files`; any additional generated analysis notebook must use the same
+prefix. Dataset names such as `<scenario>_forecasts` and `<scenario>_features` denote
+the qualified tables or files recorded in `artifact_locations`, not necessarily Lakehouse
+tables. Use the corresponding source readers and model locations; never switch sources
+silently if an artifact is unavailable.
 
 ## Execution and Safety Rules
 
@@ -47,9 +58,11 @@ At the start of this phase:
   secondary evidence.
 - Use the error convention `error = actual - forecast` consistently.
 - Do not modify source tables. Store reports and charts in `<output_folder>/post_forecasting/`.
-- Validate generated analysis code in the configured Spark environment before saving it. For
+- Validate generated analysis code in the confirmed execution environment before saving it. For
   Fabric, follow the standard Livy session rules: list sessions first, reuse an idle session, and
   create a session only when none is available. Never close the session.
+- For Databricks, use the configured compute/connector; for Local, use the configured
+  Python/Jupyter kernel and local files. Neither requires Fabric Livy or Lakehouse setup.
 - At every checkpoint, compute feasible diagnostics first, present a concise summary, ask only
   the questions required to proceed, log a Pending checkpoint, and stop.
 
@@ -59,7 +72,7 @@ For every checkpoint in this prompt:
 
 1. Log a new Pending entry in the completion report's `Checkpoint Log` with:
    - phase: `6`
-   - notebook: `06 TrainTestSelectTune` when model-specific, otherwise none
+   - notebook: `<notebook_prefix> 06 TrainTestSelectTune.ipynb` when model-specific, otherwise none
    - cell index / step: the checkpoint identifier
    - raw checkpoint text
    - questions asked

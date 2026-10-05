@@ -1,11 +1,11 @@
 ---
 name: error-analysis
-description: "Evaluate time-series forecast accuracy and decompose the error by calendar variables. USE FOR: evaluate forecast, forecast accuracy, error analysis, MAE, MAPE, ME (mean error / bias), RMSE, WMAPE, sMAPE, where is the forecast wrong, error by month/quarter/week/day-of-week, error distribution, error box-plot, seasonality of error, forecast bias, over-forecasting vs under-forecasting, worst error buckets, compare model accuracy. Built for the LightGBM + mlforecast pipeline (notebook 06 Train/Tune) that produces per-cluster models and <scenario>_forecasts tables with y (actual) and y_hat_* (predicted) columns. RUN AFTER the forecast-explainability skill: to understand WHY a forecast is wrong you first need to understand WHY the model produced that output (feature weights / SHAP). DO NOT USE FOR: computing feature importance or explaining a single prediction (use forecast-explainability), training or tuning models (use notebook 06), feature engineering (use notebook 05), clustering (use notebook 04)."
+description: "Evaluate time-series forecast accuracy and decompose the error by calendar variables. USE FOR: evaluate forecast, forecast accuracy, error analysis, MAE, MAPE, ME (mean error / bias), RMSE, WMAPE, sMAPE, where is the forecast wrong, error by month/quarter/week/day-of-week, error distribution, error box-plot, seasonality of error, forecast bias, over-forecasting vs under-forecasting, worst error buckets, compare model accuracy. Built for the LightGBM + mlforecast pipeline (notebook 06 Train/Tune) that produces per-cluster models and <scenario>_forecasts tables with y (actual) and y_hat_* (predicted) columns. RUN BEFORE the forecast-explainability skill so the worst error buckets and points define the explainability scope. DO NOT USE FOR: computing feature importance or explaining a single prediction (use forecast-explainability), training or tuning models (use notebook 06), feature engineering (use notebook 05), clustering (use notebook 04)."
 license: MIT
 metadata:
   author: Time Series Forecasting Accelerator
   version: "1.0.0"
-  runs_after: forecast-explainability
+  runs_before: forecast-explainability
 ---
 
 # Error-Analysis Skill
@@ -21,27 +21,29 @@ It is designed for the Time Series Forecasting Accelerator pipeline, where
 `y` (actual), and one or more `y_hat_*` prediction columns (e.g. `y_hat_identity`,
 `y_hat_std`), plus a selected best model.
 
-## Run this AFTER `forecast-explainability`
+## Run this BEFORE `forecast-explainability`
 
-Error analysis answers *"where is the forecast wrong?"*. But a number like "MAE is high
-in December" is not actionable on its own — you need to know **why** the model produced
-that value. The `forecast-explainability` skill provides that: feature weights (gain /
-split) and per-point SHAP contributions.
+Error analysis first answers *"where is the forecast wrong?"* and identifies the model,
+series, dates, and calendar buckets that need investigation. Then
+`forecast-explainability` answers **why** the model produced those values using feature
+weights (gain / split) and per-point SHAP contributions.
 
 Recommended flow:
 
 ```mermaid
 flowchart LR
-    A[forecast-explainability<br/>why did the model output this?] --> B[error-analysis<br/>where/when is the output wrong?]
-    B --> C[worst_buckets → pick points]
-    C --> D[explain_prediction on those points<br/>root-cause the miss]
-    D --> B
+    A[error-analysis<br/>where/when is the output wrong?] --> B[worst_buckets → pick points]
+    B --> C[forecast-explainability<br/>why did the model output this?]
+    C --> D[explain_prediction on those points<br/>investigate the miss]
+    D --> E[hierarchical-reconciliation<br/>roll up approved findings]
 ```
 
-1. First run `forecast-explainability` to understand the model's drivers.
-2. Run this skill to quantify accuracy and localize error by calendar bucket.
-3. Take the worst buckets (`worst_buckets()`) back to `explain_prediction()` to see
+1. First run this skill to quantify accuracy and localize error by calendar bucket.
+2. Pass the worst buckets (`worst_buckets()`) to `forecast-explainability`.
+3. Run `explain_prediction()` on the selected points to see
    *which feature weights* produced the miss.
+4. Run `hierarchical-reconciliation` after explainability when an approved hierarchy is
+   available.
 
 ## When To Use
 
@@ -51,6 +53,7 @@ flowchart LR
 | Compare model variants | `compare_models()` over all `y_hat_*` columns |
 | Break a metric down by season | `metrics_by_calendar(errors, by="month")` |
 | See the error *distribution*, not just the mean | `error_boxplot()` / `boxplot_grid()` |
+| See absolute-error spread at the data's frequency | Required MAE box plot grouped by weekday for daily data, week for weekly data, etc. |
 | Find where the model is worst | `worst_buckets()` |
 | Produce a stakeholder report | Templates in `templates/` |
 | Translate errors into business language | `narrate_errors()` |
@@ -99,6 +102,38 @@ A box-plot (not just a bar of the mean) exposes **spread, skew, and outliers** �
 month with a modest mean MAE but a long upper whisker is driven by a few bad weeks, which
 is a different problem than a uniformly poor month.
 
+### Required MAE box plot matched to data frequency
+
+Always include a **MAE error-distribution box plot whose calendar grouping matches the
+frequency of the evaluated data**, in addition to any broader calendar breakdowns.
+Use the pipeline's configured frequency for the evaluated series; if it is unavailable,
+infer it from sorted, distinct timestamps **within each series**, not from pooled
+timestamps across series. If the frequency is irregular or ambiguous, ask the user to
+confirm it rather than silently defaulting to monthly grouping. For mixed-frequency
+data, produce a separate plot for each frequency group.
+
+| Data frequency | X-axis buckets | `by` |
+|----------------|----------------|------|
+| Subdaily / hourly | Hour of day (0-23) | `hour` |
+| Daily / business-daily | Day of week (Mon-Sun; observed days only) | `dayofweek` |
+| Weekly | ISO week of year (1-53; observed weeks only) | `week` |
+| Monthly | Month of year (Jan-Dec) | `month` |
+| Quarterly | Quarter of year (Q1-Q4) | `quarter` |
+| Annual | Observed years | `year` |
+
+For subdaily data, add `errors["hour"] = errors["ds"].dt.hour` before plotting;
+`compute_errors()` already supplies the other calendar columns. For custom frequencies,
+confirm the appropriate grouping with the user.
+
+Call `error_boxplot(errors, by=frequency_bucket, metric="MAE")`. Each box must contain
+the **per-observation absolute errors** in that bucket, not a single pre-aggregated MAE.
+Their mean is the bucket's MAE; the box displays the median, quartiles, whiskers, and
+outliers of the absolute-error distribution. Label the y-axis as absolute error in
+target units, state the data frequency and grouping in the title, and report bucket
+sample counts and MAE using `metrics_by_calendar()`. Flag sparse or single-observation
+buckets, whose distributions cannot be interpreted reliably. Save and include this plot
+in the report; the all-calendar grid does not replace it.
+
 ## Workflow
 
 1. **Assemble actuals vs predictions.** Join `<scenario>_forecasts` to actuals on
@@ -108,10 +143,12 @@ is a different problem than a uniformly poor month.
    calendar columns.
 3. **Score overall & compare models.** `metric_summary()` for the headline numbers;
    `compare_models()` to rank `y_hat_*` variants.
-4. **Decompose by calendar.** `metrics_by_calendar(errors, by="month")` (repeat for
-   quarter / week / dayofweek).
-5. **Plot distributions.** `error_boxplot(errors, by="month", metric="MAE")` per metric,
-   or `boxplot_grid(errors, metric="MAE")` for an at-a-glance page.
+4. **Identify frequency & decompose.** Select `frequency_bucket` using the table above.
+   Run `metrics_by_calendar(errors, by=frequency_bucket)` and add broader calendar
+   breakdowns as needed.
+5. **Plot distributions.** Always produce
+   `error_boxplot(errors, by=frequency_bucket, metric="MAE")`. Add plots for other metrics
+   and optionally `boxplot_grid(errors, metric="MAE")` for an at-a-glance page.
 6. **Localize & hand off.** `worst_buckets()` picks the worst buckets; feed points from
    them into `explain_prediction()` (the `forecast-explainability` skill).
 7. **Narrate.** `narrate_errors()` for prose, then drop it into a report from `templates/`.
@@ -142,16 +179,20 @@ print(metric_summary(errors, y_true="y", y_pred=y_pred))
 # 3) Compare all model variants
 print(compare_models(forecasts_df, y_true="y", sort_by="MAE"))
 
-# 4) Decompose by month, then plot each metric's distribution
-print(metrics_by_calendar(errors, by="month", y_pred=y_pred))
+# 4) Match the grouping to the confirmed frequency (weekly example)
+frequency_bucket = "week"        # Daily: "dayofweek"; monthly: "month"
+print(metrics_by_calendar(errors, by=frequency_bucket, y_pred=y_pred))
 for metric in ["MAE", "MAPE", "ME", "RMSE"]:
-    error_boxplot(errors, by="month", metric=metric)
+    error_boxplot(
+        errors, by=frequency_bucket, metric=metric,
+        title=f"Weekly data: {metric} error distribution by ISO week of year",
+    )
 
 # 5) One-page grid (MAE across all calendar variables)
 boxplot_grid(errors, metric="MAE")
 
 # 6) Worst buckets → hand off to forecast-explainability
-print(worst_buckets(errors, by="month", metric="MAE", top_n=3))
+print(worst_buckets(errors, by=frequency_bucket, metric="MAE", top_n=3))
 
 # 7) Narrative
 print(narrate_errors(errors, y_true="y", y_pred=y_pred, unit="USD"))

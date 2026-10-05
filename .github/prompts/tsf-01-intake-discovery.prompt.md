@@ -1,16 +1,19 @@
 # Phase 1: Intake & Data Discovery
 
-Connect to the user's Fabric environment and analyze their data to understand the forecasting scenario.
+Read the user's data from Microsoft Fabric, Databricks, or local files and analyze it
+to understand the forecasting scenario.
 
 ## Prerequisites
 
-- User has access to a Microsoft Fabric workspace
-- User has data in a Lakehouse table (or knows where to put it)
+- User has access to the selected source: a Fabric Lakehouse, Databricks table/file,
+  or local file(s)
 - Agent file `time-series-forecaster.md` provides persona and boundaries
 
 ## Phase 0: Gather Required Inputs
 
-If the user has not provided all required inputs, present this prompt:
+If required inputs are missing, ask one question at a time. First confirm the data
+source, then ask only for the connection or file details relevant to that source.
+Use the following intake checklist; do not request credentials or secrets in chat.
 
 ```
 🔮 **Time Series Forecasting Accelerator**
@@ -19,9 +22,16 @@ I'll help you customize the forecasting pipeline for your specific dataset and s
 
 To get started, I need:
 
-1. **Fabric Workspace**: Which workspace contains your data?
-2. **Lakehouse Name**: Which Lakehouse has your time series data?
-3. **Table Name(s)**: What table(s) contain your historical data?
+1. **Data Source**: Microsoft Fabric, Databricks, or Local?
+2. **Source Details**:
+   - Fabric: workspace, Lakehouse, and table name(s).
+   - Databricks: workspace host/profile, catalog, schema, and table name(s), or
+     accessible file/Volume paths and formats; SQL warehouse or compute for access.
+   - Local: absolute file path(s), format (e.g., CSV, Parquet, Excel), and any
+     required read options (sheet, delimiter, encoding).
+3. **Execution Environment**: Where should the notebooks run? Normally this matches
+   the source; for local data, identify the Python/Jupyter kernel and whether Spark
+   is available. Confirm output data/model locations and remote compute when needed.
 4. **Scenario Description**: Describe your forecasting use case in a few sentences.
    - What are you forecasting? (e.g., sales, demand, inventory)
    - What's your forecast horizon? (e.g., next 4 weeks, 12 months ahead)
@@ -36,9 +46,44 @@ To get started, I need:
 
 Wait for the user to provide all required inputs before proceeding.
 
-## Phase 1.1: Connect to Fabric
+### Source and Notebook Naming Contract
 
-Once required inputs are received:
+Persist these fields in `completion_report.md` for every later phase:
+
+- `data_source`: exactly `Fabric`, `Databricks`, or `Local`.
+- `notebook_prefix`: identical to `data_source`; based on where the input data is
+  read, not the template name or where the generated notebook file is stored.
+- `source_details`: verified source-specific connection identifiers or absolute
+  file paths, formats, and read options (no secrets).
+- `execution_environment`: confirmed runtime/compute and non-secret connection profile.
+- `artifact_locations`: explicit locations/formats for prepared, profiled, clustered,
+  global/per-cluster feature, forecast, and model outputs, filled as planning proceeds.
+
+All generated notebooks must use `<notebook_prefix> <NN> <NotebookName>.ipynb`:
+
+| Number | Generated filename |
+|--------|--------------------|
+| 01 | `<notebook_prefix> 01 DataPreparation.ipynb` |
+| 02 | `<notebook_prefix> 02 ExploratoryDataAnalysis.ipynb` |
+| 03 | `<notebook_prefix> 03 ProfilingIntermittent.ipynb` |
+| 04 | `<notebook_prefix> 04 Clustering.ipynb` |
+| 05 | `<notebook_prefix> 05 FeatureEngineering.ipynb` |
+| 06 | `<notebook_prefix> 06 TrainTestSelectTune.ipynb` |
+
+For example: `Fabric 01 DataPreparation.ipynb`, `Databricks 01 DataPreparation.ipynb`,
+or `Local 01 DataPreparation.ipynb`. Resolve the placeholder before saving files,
+logging checkpoints, or displaying notebook names. Keep the unprefixed templates in
+`src/notebooks/` unchanged. If multiple source types are involved, ask which is the
+primary forecasting input and use its prefix consistently; record all auxiliary sources.
+Never change the source or prefix silently on connection failure.
+
+## Phase 1.1: Connect to the Selected Source
+
+Discover the available tools or configured connectors before calling them. Reuse
+existing authenticated access and verify read permissions. Follow only the matching
+branch below; Fabric workspace/Lakehouse IDs are not required for other sources.
+
+### Fabric
 
 1. **List workspaces** to verify access:
    ```
@@ -59,9 +104,36 @@ Once required inputs are received:
    get_sql_endpoint(workspace_name=<user_workspace>, item_name=<lakehouse_name>, item_type="Lakehouse")
    ```
 
+### Databricks
+
+1. Verify the user-selected workspace and configured authentication profile.
+2. Use the available Databricks connector, SQL warehouse, or compute to verify the
+   catalog/schema/table or file path. Do not assume a default workspace or catalog.
+3. Record fully qualified table identifiers (`catalog.schema.table`) or file paths,
+   formats, read options, and the warehouse/compute identifier.
+4. Inspect schemas and small samples with Databricks SQL/Spark. If access or execution
+   tooling is unavailable, report the blocker and request configuration; do not
+   substitute Fabric tools or claim a successful connection.
+
+### Local
+
+1. Resolve and verify the provided file paths without modifying the source files.
+2. Read schema and a small sample using the format-appropriate reader in the confirmed
+   local environment; apply the specified sheet/delimiter/encoding options.
+3. Record absolute paths and read options. For multiple files, confirm whether they
+   should be concatenated or joined and verify schema/key compatibility.
+4. Confirm local output locations. No workspace, Lakehouse, or cloud upload is required.
+
 ## Phase 1.2: Analyze Data Schema
 
-Query the data to understand its structure:
+Inspect the data using the selected source. The SQL below illustrates Fabric SQL
+endpoint queries, not a mandatory access path:
+
+- Fabric: use schema-qualified tables and SQL endpoint syntax.
+- Databricks: use qualified catalog/schema/table identifiers, `DESCRIBE TABLE` or
+  catalog metadata, `SELECT ... LIMIT 5`, and Spark/Databricks SQL aggregates.
+- Local: use the loaded DataFrame's schema/dtypes, row count, date min/max, and
+  `head(5)` (or equivalent). Apply the same profiling checks without issuing cloud SQL.
 
 1. **Get table schema**:
    ```sql
@@ -89,6 +161,11 @@ Query the data to understand its structure:
 ## Phase 1.3: Profile the Data
 
 Gather statistics needed for customization decisions:
+
+Adapt the examples to the source's SQL dialect or local DataFrame API. For multiple
+ID columns, count distinct ID tuples rather than concatenating them. Use `STDDEV_SAMP`
+in Databricks or the equivalent sample standard deviation locally instead of Fabric's
+`STDEV`. Report whether statistics cover the full dataset or only a sample.
 
 1. **Identify key columns** by analyzing schema and sample:
    - Date/timestamp column (for time series ordering)
@@ -144,7 +221,10 @@ Present findings to the user for confirmation:
 ```
 📊 **Data Profile Summary**
 
-**Source:** <workspace_name>.<lakehouse_name>.<table_name>
+**Data Source:** <data_source>
+**Source Location:** <verified table identifier or absolute file path(s)>
+**Execution Environment:** <execution_environment>
+**Notebook Prefix:** <notebook_prefix>
 
 **Volume:**
 - Total rows: <row_count>
@@ -198,7 +278,7 @@ Checkpoint protocol (hard stop):
 
 ## Error Handling
 
-### Workspace/Lakehouse Not Found
+### Fabric Workspace/Lakehouse Not Found
 ```
 ❌ **Connection Error**
 
@@ -214,28 +294,34 @@ Please verify the names and try again.
 ```
 ❌ **Table Not Found**
 
-Table "<table_name>" was not found in <lakehouse_name>.
+Table "<table_name>" was not found in <selected source namespace>.
 
 Available tables:
-<list tables from INFORMATION_SCHEMA.TABLES>
+<list accessible tables in the selected Lakehouse or catalog/schema>
 
 Please provide the correct table name.
 ```
 
-### SQL Query Errors
+### Databricks Connection or Local File Errors
+- Report the inaccessible workspace, compute, table, or file and the specific error.
+- Ask for corrected identifiers, access configuration, file paths, or read options.
+- Do not fall back to another source or invent data to continue.
+
+### Query or Reader Errors
 - Analyze the error message
-- Adjust query syntax for Fabric SQL endpoint
-- Retry with corrected query
+- Adjust syntax for Fabric SQL, Databricks SQL/Spark, or the local file reader
+- Retry with the corrected query/read options; surface any remaining blocker
 
 ## Outputs for Next Phase
 
 After user confirms the data profile, pass these to Phase 2:
 
-- **workspace_name**: Confirmed workspace
-- **workspace_id**: For Livy session creation
-- **lakehouse_name**: Confirmed lakehouse
-- **lakehouse_id**: For Livy session creation
-- **table_name**: Confirmed table(s)
+- **data_source**, **notebook_prefix**: Confirmed values from the naming contract
+- **source_details**: Fabric workspace/Lakehouse IDs and qualified tables; Databricks
+  host/profile, catalog/schema/tables or file paths and warehouse/compute; or local
+  absolute file paths, formats, and read options. Store only the applicable fields.
+- **execution_environment**: Confirmed runtime/compute
+- **artifact_locations**: Confirmed output storage, refined in Phase 3
 - **column_mapping**: Confirmed column roles
   - date_column
   - target_column
@@ -266,7 +352,8 @@ This output folder is intended to be ephemeral/local and should be gitignored.
 Before stopping, create the completion report:
 1. Copy template from `src/notebooks/templates/completion_report_template.md`
 2. Save to `.output/<scenario_name>_<YYYYMMDD>/completion_report.md`
-3. Fill the **Phase 1: Data Discovery** section with all gathered data
+3. Fill the **Phase 1: Data Discovery** section with all gathered data, including the
+   source/naming contract and applicable connection or file details
 4. Mark Phase 1 as `[x]` complete in the Status section
 5. Set the scenario name and timestamps
 

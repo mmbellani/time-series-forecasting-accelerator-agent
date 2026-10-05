@@ -1,8 +1,8 @@
 """End-to-end example: reconcile base forecasts up a hierarchy and diagnose roll-up.
 
 Run this AFTER notebook 06 has produced the `<scenario>_forecasts` table (with `y` and one
-or more `y_hat_*` columns) and AFTER the `forecast-explainability` and `error-analysis`
-skills have been used at the base-series level.
+or more `y_hat_*` columns), then `error-analysis`, then `forecast-explainability` have
+been run at the base-series level.
 
 STEP 0 is mandatory: ask the data scientist which columns are the hierarchical levels
 (top → bottom) and at which level to aggregate, then confirm with `describe_hierarchy`.

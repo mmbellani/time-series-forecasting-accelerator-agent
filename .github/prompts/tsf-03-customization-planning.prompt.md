@@ -16,6 +16,7 @@ At the start of this phase:
 
 ### Context from Prior Phases (via completion report):
   - scenario_name (derived folder name)
+  - data_source, notebook_prefix, source_details, execution_environment, artifact_locations
   - parameters (granularity, horizon, series structure, seasonality, etc.)
   - column_assignments (date, target, IDs, regressors)
   - notebook_config (per-notebook settings)
@@ -32,16 +33,40 @@ At the start of this phase:
 
 ## Template Notebook References
 
-Read these notebooks to understand what to customize:
+Read these shared, unprefixed templates to understand what to customize. Template
+names are not output names; do not rename or modify the originals.
 
 | Notebook | Path | Key Sections to Analyze |
 |----------|------|-------------------------|
-| 01 Data Prep | `src/notebooks/Fabric 01 DataPreparation.ipynb` | Table loading, date parsing, null handling, aggregation |
-| 02 Exploratory Data Analysis | `src/notebooks/Fabric 02 ExploratoryDataAnalysis.ipynb` | Data exploration, summary statistics, visualizations |
-| 03 Profiling | `src/notebooks/Fabric 03 ProfilingIntermittent.ipynb` | CV²/ADI calculation, classification thresholds, output tables |
-| 04 Clustering | `src/notebooks/Fabric 04 Clustering.ipynb` | Feature scaling, K-Means params, cluster assignment |
-| 05 Features | `src/notebooks/Fabric 05 FeatureEngineering.ipynb` | Lag creation, rolling stats, calendar features, regressor handling |
-| 06 Train/Tune | `src/notebooks/Fabric 06 TrainTestSelectTune.ipynb` | Model definition, hyperparameters, Optuna config, metrics |
+| 01 Data Prep | `src/notebooks/01 DataPreparation.ipynb` | Table loading, date parsing, null handling, aggregation |
+| 02 Exploratory Data Analysis | `src/notebooks/02 ExploratoryDataAnalysis.ipynb` | Data exploration, summary statistics, visualizations |
+| 03 Profiling | `src/notebooks/03 ProfilingIntermittent.ipynb` | CV²/ADI calculation, classification thresholds, output tables |
+| 04 Clustering | `src/notebooks/04 Clustering.ipynb` | Feature scaling, K-Means params, cluster assignment |
+| 05 Features | `src/notebooks/05 FeatureEngineering.ipynb` | Lag creation, rolling stats, calendar features, regressor handling |
+| 06 Train/Tune | `src/notebooks/06 TrainTestSelectTune.ipynb` | Model definition, hyperparameters, Optuna config, metrics |
+
+### Source-Aware Output Plan
+
+Restore the Phase 1 naming contract. If it is missing, confirm the source before
+planning. Set `notebook_prefix = data_source` (`Fabric`, `Databricks`, or `Local`).
+Record a `notebook_files` mapping for numbers 01-06 by prepending that prefix plus a
+space to each template basename, under `<output_folder>`. Use these resolved names
+in the plan, checkpoints, handovers, and final delivery.
+
+Plan source-specific loading, execution, and persistence for **every** notebook,
+not just a filename change:
+
+- Fabric: Lakehouse reads/writes and Fabric compute.
+- Databricks: qualified catalog/schema tables or approved file/Volume paths,
+  configured compute, and model storage/MLflow locations.
+- Local: explicit file readers and local artifact/model paths in the confirmed
+  Python/Jupyter environment; use local Spark only if configured and needed.
+
+Record `artifact_locations` for each pipeline output, including per-cluster features.
+The table names below are logical dataset names; map them to qualified tables or
+local files and wire downstream readers to those exact locations. Classify runtime
+or storage changes by risk and obtain the usual approval. Do not retain Fabric-only
+paths, APIs, or mandatory Lakehouse setup in Databricks/Local outputs.
 
 ## Per-Notebook Planning
 
@@ -164,7 +189,7 @@ df_clustered = df_profiled.withColumn("cluster_id", F.lit(0))
 | Evaluation metrics | Medium | Template metrics | `<metric_list>` | User preference |
 | Cross-validation folds | Medium | Template folds | `<n_folds>` | Based on data size |
 | Output table name | Low | `<template_output>` | `<scenario>_forecasts` | Consistent naming |
-| Model save path | Low | Template path | `/lakehouse/default/Files/models/<scenario>/` | Organized storage |
+| Model save path | Low | Template path | `<confirmed source-appropriate model location>` | Organized storage |
 
 **Cells to Modify:**
 - Cell X: Input table and horizon
@@ -327,13 +352,17 @@ After user approves the plan, pass these to Phase 4:
 
 - **scenario_name**: Confirmed folder name
 - **output_folder**: Full path with timestamp
+- **data_source**, **notebook_prefix**, **source_details**, **execution_environment**:
+  Preserve confirmed source context
+- **notebook_files**: Resolved source-prefixed paths for all six notebooks
+- **artifact_locations**: Approved qualified tables or file/model paths for every output
 - **customization_plan**: Per-notebook detailed changes
   - notebook_01: list of {cell_id, change_type, old_value, new_value, risk}
-  - notebook_01b: list of changes
   - notebook_02: list of changes
   - notebook_03: list of changes
-  - notebook_04: list of changess
+  - notebook_04: list of changes
   - notebook_05: list of changes
+  - notebook_06: list of changes
 - **new_cells**: Any cells to add (with code templates)
 - **skip_sections**: Any sections/notebooks to skip
 - **dependencies**: New packages to add to requirements.txt
@@ -346,6 +375,7 @@ Before stopping:
 1. Read the existing completion report
 2. Fill the **Phase 3: Customization Plan** section with:
    - Output folder path
+   - Source context, resolved notebook_files mapping, and artifact_locations
    - Change summary by risk level
    - Per-notebook change tables
 3. Mark Phase 3 as `[x]` complete in the Status section
@@ -364,5 +394,5 @@ I've documented the customization plan in the completion report.
 2. Reference the phase 4 prompt: `tsf-04-notebook-generation.prompt.md`
 3. Provide the completion report path
 
-Note: Phase 4 may take several minutes as each code cell is validated via Livy.
+Note: Phase 4 may take several minutes as each code cell is validated in the confirmed execution environment.
 ```

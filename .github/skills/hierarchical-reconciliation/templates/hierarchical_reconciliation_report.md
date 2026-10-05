@@ -6,7 +6,7 @@
 **Target:** {{TARGET}} ({{UNIT}})
 **Base series:** {{N_BASE}} • **Reconciliation:** bottom-up
 
-> Run **after** the `forecast-explainability` and `error-analysis` reports. This report
+> Run **after** the `error-analysis` and then `forecast-explainability` reports. This report
 > lifts both to the aggregate: *how base forecasts compose the total* and *how base errors
 > propagate up the hierarchy*.
 
