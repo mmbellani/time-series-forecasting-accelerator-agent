@@ -11,14 +11,20 @@ Interpret the user's forecasting scenario and infer customization parameters bas
 
 At the start of this phase:
 1. Read the completion report from the path provided by user
-2. Extract Phase 1 data: workspace info, table name, column mapping, data profile, scenario description
+2. Extract Phase 1 data: data source, notebook prefix, source details, execution
+   environment, artifact locations, column mapping, data profile, scenario description
 3. Use this context for scenario interpretation
 
 ### Context from Phase 1 (via completion report):
-  - workspace_name, workspace_id, lakehouse_name, lakehouse_id
-  - table_name, column_mapping (date, target, IDs, regressors)
+  - data_source, notebook_prefix (`Fabric`, `Databricks`, or `Local`)
+  - source_details, execution_environment, artifact_locations
+  - column_mapping (date, target, IDs, regressors)
   - data_profile (row_count, date_range, series_count, granularity, hierarchy)
   - scenario_description (user's original request)
+
+Preserve the source and naming contract from Phase 1. If an older report lacks it,
+confirm and record the source before proceeding; never default to Fabric. All notebook
+names shown below must resolve `<notebook_prefix>` to the confirmed source.
 
 ## Interpretation Framework
 
@@ -177,12 +183,12 @@ Based on your description and data profile, here's my understanding:
 
 | Notebook | Configuration | Notes |
 |----------|---------------|-------|
-| 01 Data Prep | <key settings> | <any special handling> |
-| 01b Exploratory Data Analysis | <key settings> | <data analysis handling> |
-| 02 Profiling | <thresholds> | <intermittency handling> |
-| 03 Clustering | <enabled/skip, params> | <cluster count, method> |
-| 04 Features | <lags, windows, features> | <based on seasonality> |
-| 05 Train/Tune | <models, metrics, horizon> | <optimization settings> |
+| <notebook_prefix> 01 DataPreparation | <key settings> | <source-specific loading and persistence> |
+| <notebook_prefix> 02 ExploratoryDataAnalysis | <key settings> | <data analysis handling> |
+| <notebook_prefix> 03 ProfilingIntermittent | <thresholds> | <intermittency handling> |
+| <notebook_prefix> 04 Clustering | <enabled/skip, params> | <cluster count, method> |
+| <notebook_prefix> 05 FeatureEngineering | <lags, windows, features> | <based on seasonality> |
+| <notebook_prefix> 06 TrainTestSelectTune | <models, metrics, horizon> | <optimization settings> |
 
 ### Risk Assessment
 
@@ -260,6 +266,8 @@ Generate a short, descriptive name for the output folder:
 After user confirms interpretation, pass these to Phase 3:
 
 - **scenario_name**: Derived folder name
+- **data_source**, **notebook_prefix**, **source_details**, **execution_environment**,
+  **artifact_locations**: Preserve confirmed Phase 1 values
 - **parameters**:
   - time_granularity: daily | weekly | monthly
   - forecast_horizon: integer

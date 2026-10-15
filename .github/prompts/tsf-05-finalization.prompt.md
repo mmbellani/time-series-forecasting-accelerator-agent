@@ -1,10 +1,11 @@
 # Phase 5: Finalization & Delivery
 
-Assemble output artifacts, optionally upload notebooks to Fabric, archive existing tables, execute the pipeline, and deliver the customized solution.
+Assemble source-prefixed output artifacts, optionally deploy and execute them in the
+confirmed Fabric, Databricks, or Local environment, and deliver the customized solution.
 
 ## Prerequisites
 
-- Phase 4 completed: All 5 notebooks generated and validated
+- Phase 4 completed: All 6 notebooks generated and validated
 - **Completion report** from Phase 4 (user provides path)
 
 ## Phase Start — Read Completion Report
@@ -12,12 +13,14 @@ Assemble output artifacts, optionally upload notebooks to Fabric, archive existi
 At the start of this phase:
 1. Read the completion report from the path provided by user
 2. The report now contains all context from Phases 1-4
-3. Use this for generating final deliverables and Fabric deployment
+3. Use this for final deliverables and source-appropriate deployment/execution
 
 ### Context from Prior Phases (via completion report):
-  - output_folder: Path containing all 5 notebooks
-  - workspace_name, workspace_id: Fabric workspace (from Phase 1)
-  - lakehouse_name, lakehouse_id: Fabric lakehouse (from Phase 1)
+  - output_folder: Path containing all 6 notebooks
+  - data_source, notebook_prefix, source_details, execution_environment
+  - notebook_files: Resolved source-prefixed paths for 01-06
+  - artifact_locations: Qualified table or file/model locations
+  - workspace_name, workspace_id, lakehouse_name, lakehouse_id: Fabric only
   - scenario_name: Derived scenario name (from Phase 2)
   - validation_results: Per-notebook validation status (from Phase 4)
   - output_tables: Table names created by each notebook (from Phase 4)
@@ -28,19 +31,24 @@ At the start of this phase:
 
 ## Step 1: Verify Output Folder Contents
 
-Confirm all 5 notebooks exist in the output folder:
+Restore the source/naming contract from the completion report. `notebook_prefix`
+must match `data_source`: `Fabric`, `Databricks`, or `Local`. If missing, confirm it
+with the user rather than assuming Fabric. Verify `notebook_files` against these
+six expected filenames; substitute the prefix everywhere before saving or displaying:
 
 ```
 <output_folder>/
-├── Fabric 01 DataPreparation.ipynb
-├── Fabric 02 ExploratoryDataAnalysis.ipynb
-├── Fabric 03 ProfilingIntermittent.ipynb
-├── Fabric 04 Clustering.ipynb
-├── Fabric 05 FeatureEngineering.ipynb
-└── Fabric 06 TrainTestSelectTune.ipynb
+├── <notebook_prefix> 01 DataPreparation.ipynb
+├── <notebook_prefix> 02 ExploratoryDataAnalysis.ipynb
+├── <notebook_prefix> 03 ProfilingIntermittent.ipynb
+├── <notebook_prefix> 04 Clustering.ipynb
+├── <notebook_prefix> 05 FeatureEngineering.ipynb
+└── <notebook_prefix> 06 TrainTestSelectTune.ipynb
 ```
 
-If any notebook is missing, stop and report the issue to the user.
+If any notebook is missing or misnamed, stop and report it; do not silently rename
+existing artifacts. Notebook display names are the resolved filenames without `.ipynb`.
+Preserve the data-source prefix even if a different execution destination was approved.
 
 ---
 
@@ -52,7 +60,7 @@ If new dependencies were introduced, create `requirements.txt`:
 # Requirements for <scenario_name>
 # Generated: <YYYY-MM-DD>
 #
-# These packages are in addition to the standard Fabric environment.
+# These packages are in addition to the confirmed execution environment.
 # Install via: %pip install -r requirements.txt
 
 <package1>==<version>
@@ -60,18 +68,44 @@ If new dependencies were introduced, create `requirements.txt`:
 ...
 ```
 
-**Note:** Only include packages NOT already in the standard Fabric environment.
+**Note:** Only include required packages not already supplied by the confirmed runtime.
 
 ---
 
-## Step 3: Offer Upload to Fabric
+## Deployment Routing (Required Before Step 3)
+
+Use `execution_environment` to select the delivery branch, preserving the source-based
+`notebook_prefix` and recorded paths. Do not upload anything without user approval.
+
+- **Fabric:** follow Steps 3-6 and the Fabric failure-recovery examples below.
+- **Databricks:** ask whether to import the six notebooks to an approved workspace
+  folder or keep them as local deliverables. Discover the configured Databricks
+  import/execution tools or CLI; do not invent tool names or use Fabric APIs.
+  Import each recorded `notebook_files` path with its source-prefixed display name.
+  Confirm conflicts before replacing existing notebooks. Separately ask whether to
+  execute on the approved compute; run 01-06 sequentially, capture run IDs and
+  failures, and verify outputs at `artifact_locations`. Confirm a backup/archive
+  plan for existing output tables/files before rerunning. Do not attach a Lakehouse.
+- **Local:** cloud upload and Lakehouse attachment are not applicable. Deliver the
+  six `Local`-prefixed notebooks (or the recorded source prefix for an explicitly
+  approved cross-environment run). Ask before rerunning the pipeline in the configured
+  local kernel, confirm protection of existing output artifacts, run 01-06 in order,
+  and record execution results and verified local data/model paths.
+
+Databricks and Local branches skip the Fabric-only Steps 3-6 and proceed to Step 7
+after their delivery/execution decision. If tooling is unavailable, report the
+blocker and offer manual delivery; never report upload or execution success without
+verification. Apply the same maximum of three fix attempts and stop on failure.
+Use source-appropriate logs rather than the Fabric-specific recovery calls below.
+
+## Step 3: Offer Upload to Fabric (Fabric Execution Only)
 
 Present the upload option to the user:
 
 ```
 📤 **Upload to Fabric?**
 
-Your 5 customized notebooks are ready locally. Would you like me to upload them to your Fabric workspace?
+Your 6 customized notebooks are ready locally. Would you like me to upload them to your Fabric workspace?
 
 **Target Workspace:** <workspace_name>
 **Lakehouse to Attach:** <lakehouse_name>
@@ -103,12 +137,12 @@ list_items(workspace_name=<workspace_name>, item_type="Notebook")
 ```
 
 Check if any of these notebooks already exist:
-- `Fabric 01 DataPreparation`
-- `Fabric 02 ExploratoryDataAnalysis`
-- `Fabric 03 ProfilingIntermittent`
-- `Fabric 04 Clustering`
-- `Fabric 05 FeatureEngineering`
-- `Fabric 06 TrainTestSelectTune`
+- `<notebook_prefix> 01 DataPreparation`
+- `<notebook_prefix> 02 ExploratoryDataAnalysis`
+- `<notebook_prefix> 03 ProfilingIntermittent`
+- `<notebook_prefix> 04 Clustering`
+- `<notebook_prefix> 05 FeatureEngineering`
+- `<notebook_prefix> 06 TrainTestSelectTune`
 
 ### 4.2 Confirm Delete and Re-upload (If Needed)
 
@@ -121,12 +155,12 @@ The following notebooks already exist in workspace "<workspace_name>":
 
 | Notebook | Status |
 |----------|--------|
-| Fabric 01 DataPreparation | ⚠️ Exists |
-| Fabric 02 ExploratoryDataAnalysis | ⚠️ Exists |
-| Fabric 03 ProfilingIntermittent | ⚠️ Exists |
-| Fabric 04 Clustering | New |
-| Fabric 05 FeatureEngineering | ⚠️ Exists |
-| Fabric 06 TrainTestSelectTune | New |
+| <notebook_prefix> 01 DataPreparation | ⚠️ Exists |
+| <notebook_prefix> 02 ExploratoryDataAnalysis | ⚠️ Exists |
+| <notebook_prefix> 03 ProfilingIntermittent | ⚠️ Exists |
+| <notebook_prefix> 04 Clustering | New |
+| <notebook_prefix> 05 FeatureEngineering | ⚠️ Exists |
+| <notebook_prefix> 06 TrainTestSelectTune | New |
 
 I will need to **delete** the existing notebooks and then **re-upload** them. Continue? (Y/N)
 ```
@@ -141,7 +175,7 @@ For each existing notebook, delete it using `delete_item()`:
 ```python
 delete_item(
     workspace_name=<workspace_name>,
-    item_display_name="Fabric 01 DataPreparation",
+    item_display_name="<notebook_prefix> 01 DataPreparation",
     item_type="Notebook"
 )
 ```
@@ -157,13 +191,13 @@ For each notebook, call `import_notebook_to_fabric()`:
 ```python
 import_notebook_to_fabric(
     workspace_name=<workspace_name>,
-    notebook_display_name="Fabric 01 DataPreparation",  # No subfolder, root level
-    local_notebook_path="<output_folder>/Fabric 01 DataPreparation.ipynb",
+    notebook_display_name="<notebook_prefix> 01 DataPreparation",  # No subfolder, root level
+    local_notebook_path="<output_folder>/<notebook_prefix> 01 DataPreparation.ipynb",
     description="Time Series Forecasting - <scenario_name> - Generated <YYYY-MM-DD>"
 )
 ```
 
-Upload all 5 notebooks (can be done in parallel).
+Upload all 6 notebooks (can be done in parallel).
 
 ### 4.5 Attach Lakehouse to All Notebooks
 
@@ -172,12 +206,12 @@ After all uploads complete, attach the lakehouse to each notebook:
 ```python
 attach_lakehouse_to_notebook(
     workspace_name=<workspace_name>,
-    notebook_name="Fabric 01 DataPreparation",
+    notebook_name="<notebook_prefix> 01 DataPreparation",
     lakehouse_name=<lakehouse_name>
 )
 ```
 
-Attach lakehouse to all 5 notebooks (can be done in parallel).
+Attach lakehouse to all 6 notebooks (can be done in parallel).
 
 ### 4.6 Report Upload Success
 
@@ -186,12 +220,12 @@ Attach lakehouse to all 5 notebooks (can be done in parallel).
 
 | Notebook | Upload | Lakehouse |
 |----------|--------|-----------|
-| Fabric 01 DataPreparation | ✅ Uploaded | ✅ Attached |
-| Fabric 02 ExploratoryDataAnalysis | ✅ Uploaded | ✅ Attached |
-| Fabric 03 ProfilingIntermittent | ✅ Uploaded | ✅ Attached |
-| Fabric 04 Clustering | ✅ Uploaded | ✅ Attached |
-| Fabric 05 FeatureEngineering | ✅ Uploaded | ✅ Attached |
-| Fabric 06 TrainTestSelectTune | ✅ Uploaded | ✅ Attached |
+| <notebook_prefix> 01 DataPreparation | ✅ Uploaded | ✅ Attached |
+| <notebook_prefix> 02 ExploratoryDataAnalysis | ✅ Uploaded | ✅ Attached |
+| <notebook_prefix> 03 ProfilingIntermittent | ✅ Uploaded | ✅ Attached |
+| <notebook_prefix> 04 Clustering | ✅ Uploaded | ✅ Attached |
+| <notebook_prefix> 05 FeatureEngineering | ✅ Uploaded | ✅ Attached |
+| <notebook_prefix> 06 TrainTestSelectTune | ✅ Uploaded | ✅ Attached |
 ```
 
 ---
@@ -345,7 +379,7 @@ For each notebook (01 → 02 → 03 → 04 → 05 → 06):
    ```python
    result = run_on_demand_job(
        workspace_name=<workspace_name>,
-       item_name="Fabric 01 DataPreparation",
+       item_name="<notebook_prefix> 01 DataPreparation",
        item_type="Notebook",
        job_type="RunNotebook"
    )
@@ -369,7 +403,7 @@ For each notebook (01 → 02 → 03 → 04 → 05 → 06):
 
 ### 6.6 Execution Complete
 
-When all 5 notebooks complete successfully:
+When all 6 notebooks complete successfully:
 
 ```
 ✅ **Pipeline Execution Complete!**
@@ -401,7 +435,7 @@ Fetch driver logs to understand the failure:
 ```python
 logs = get_notebook_driver_logs(
     workspace_name=<workspace_name>,
-    notebook_name="Fabric 04 Clustering",  # Failed notebook
+    notebook_name="<notebook_prefix> 04 Clustering",  # Failed notebook
     job_instance_id=<job_instance_id>,
     log_type="stdout",  # Python exceptions are in stdout!
     max_lines=500
@@ -452,12 +486,12 @@ C) Stop here — I'll fix it manually in Fabric
      ```python
      import_notebook_to_fabric(
          workspace_name=<workspace_name>,
-         notebook_display_name="Fabric 04 Clustering",
-         local_notebook_path="<output_folder>/Fabric 04 Clustering.ipynb"
+         notebook_display_name="<notebook_prefix> 04 Clustering",
+         local_notebook_path="<output_folder>/<notebook_prefix> 04 Clustering.ipynb"
      )
      attach_lakehouse_to_notebook(
          workspace_name=<workspace_name>,
-         notebook_name="Fabric 04 Clustering",
+         notebook_name="<notebook_prefix> 04 Clustering",
          lakehouse_name=<lakehouse_name>
      )
      ```
@@ -477,7 +511,7 @@ Retrieve complete logs:
 ```python
 logs = get_notebook_driver_logs(
     workspace_name=<workspace_name>,
-    notebook_name="Fabric 04 Clustering",
+    notebook_name="<notebook_prefix> 04 Clustering",
     job_instance_id=<job_instance_id>,
     log_type="stdout",
     max_lines=None  # Get all lines
@@ -502,7 +536,10 @@ Update the completion report with Phase 5 results:
 1. **Update Status section** — Mark Phase 5 as `[x]` complete
 2. **Update metadata** — Set "Last Updated" to current date with "(Phase 5)"
 3. **Fill Phase 5 section:**
+   - Confirmed data source, notebook prefix, and resolved paths for all six notebooks
+   - Execution environment and verified output table/file/model locations
    - Notebook Upload status and details
+     (not applicable for Local execution; Lakehouse attachment only for Fabric)
    - Table Archiving status (if executed)
    - Pipeline Execution status (if executed)
    - Per-notebook execution details with job IDs and durations
@@ -514,7 +551,11 @@ Update the completion report with Phase 5 results:
 
 ## Checkpoint 5.1: Present Final Summary
 
-Present a summary tailored to what actions were taken:
+Present a summary tailored to what actions were actually taken. Resolve notebook names
+from `notebook_files`. For Databricks, replace Fabric workspace/Lakehouse details in
+Scenarios A/B with the Databricks workspace path, catalog/schema or file locations,
+and compute. For Local execution, omit upload fields and report kernel and artifact
+paths. Never describe a local file as a Lakehouse table.
 
 ### Scenario A: Full Execution (Upload + Execute)
 
@@ -527,7 +568,7 @@ Present a summary tailored to what actions were taken:
 | Attribute | Value |
 |-----------|-------|
 | Workspace | <workspace_name> |
-| Notebooks Uploaded | 5 |
+| Notebooks Uploaded | 6 |
 | Lakehouse Attached | <lakehouse_name> |
 
 ### 🗄️ Archiving Summary
@@ -542,11 +583,12 @@ Present a summary tailored to what actions were taken:
 ### 🚀 Execution Summary
 | Notebook | Status | Duration |
 |----------|--------|----------|
-| 01 DataPreparation | ✅ | 3m 12s |
-| 02 Profiling | ✅ | 2m 05s |
-| 03 Clustering | ✅ | 4m 18s |
-| 04 FeatureEngineering | ✅ | 2m 44s |
-| 05 TrainTestSelectTune | ✅ | 3m 03s |
+| <notebook_prefix> 01 DataPreparation | ✅ | <duration> |
+| <notebook_prefix> 02 ExploratoryDataAnalysis | ✅ | <duration> |
+| <notebook_prefix> 03 ProfilingIntermittent | ✅ | <duration> |
+| <notebook_prefix> 04 Clustering | ✅ | <duration> |
+| <notebook_prefix> 05 FeatureEngineering | ✅ | <duration> |
+| <notebook_prefix> 06 TrainTestSelectTune | ✅ | <duration> |
 
 **Total Pipeline Duration:** 15m 22s
 
@@ -565,13 +607,13 @@ Present a summary tailored to what actions were taken:
 | Attribute | Value |
 |-----------|-------|
 | Workspace | <workspace_name> |
-| Notebooks Uploaded | 5 |
+| Notebooks Uploaded | 6 |
 | Lakehouse Attached | <lakehouse_name> |
 | Execution | ⏭️ Skipped (run manually when ready) |
 
 **To run the pipeline manually:**
 1. Open Fabric workspace "<workspace_name>"
-2. Run notebooks in order: 01 → 02 → 03 → 04 → 05
+2. Run notebooks in order: 01 → 02 → 03 → 04 → 05 → 06
 
 ---
 
@@ -588,19 +630,20 @@ Your customized notebooks are ready at:
 
 | File | Status |
 |------|--------|
-| Fabric 01 DataPreparation.ipynb | ✅ Ready |
-| Fabric 02 ExploratoryDataAnalysis.ipynb | ✅ Ready |
-| Fabric 03 ProfilingIntermittent.ipynb | ✅ Ready |
-| Fabric 04 Clustering.ipynb | ✅ Ready |
-| Fabric 05 FeatureEngineering.ipynb | ✅ Ready |
-| Fabric 06 TrainTestSelectTune.ipynb | ✅ Ready |
+| <notebook_prefix> 01 DataPreparation.ipynb | ✅ Ready |
+| <notebook_prefix> 02 ExploratoryDataAnalysis.ipynb | ✅ Ready |
+| <notebook_prefix> 03 ProfilingIntermittent.ipynb | ✅ Ready |
+| <notebook_prefix> 04 Clustering.ipynb | ✅ Ready |
+| <notebook_prefix> 05 FeatureEngineering.ipynb | ✅ Ready |
+| <notebook_prefix> 06 TrainTestSelectTune.ipynb | ✅ Ready |
 | completion_report.md | ✅ Generated |
 | requirements.txt | <Included / Not needed> |
 
 **To deploy manually:**
-1. Import notebooks to your Fabric workspace
-2. Attach lakehouse "<lakehouse_name>" to each notebook
-3. Run notebooks in order: 01 → 02 → 03 → 04 → 05
+- Fabric: import to the confirmed workspace and attach the configured Lakehouse.
+- Databricks: import to the confirmed workspace folder and select approved compute.
+- Local: open in the configured Python/Jupyter environment; no cloud upload is needed.
+- In all cases, verify the recorded data/model paths and run 01 → 02 → 03 → 04 → 05 → 06.
 
 ---
 
@@ -690,12 +733,12 @@ Final deliverables in `<output_folder>/`:
 
 | Artifact | Required | Description |
 |----------|----------|-------------|
-| `Fabric 01 DataPreparation.ipynb` | ✅ | Customized notebook |
-| `Fabric 02 ExploratoryDataAnalysis.ipynb` | ✅ | Customized notebook |
-| `Fabric 03 ProfilingIntermittent.ipynb` | ✅ | Customized notebook |
-| `Fabric 04 Clustering.ipynb` | ✅ | Customized notebook |
-| `Fabric 05 FeatureEngineering.ipynb` | ✅ | Customized notebook |
-| `Fabric 06 TrainTestSelectTune.ipynb` | ✅ | Customized notebook |
+| `<notebook_prefix> 01 DataPreparation.ipynb` | ✅ | Customized notebook |
+| `<notebook_prefix> 02 ExploratoryDataAnalysis.ipynb` | ✅ | Customized notebook |
+| `<notebook_prefix> 03 ProfilingIntermittent.ipynb` | ✅ | Customized notebook |
+| `<notebook_prefix> 04 Clustering.ipynb` | ✅ | Customized notebook |
+| `<notebook_prefix> 05 FeatureEngineering.ipynb` | ✅ | Customized notebook |
+| `<notebook_prefix> 06 TrainTestSelectTune.ipynb` | ✅ | Customized notebook |
 | `completion_report.md` | ✅ | Full documentation |
 | `requirements.txt` | ❓ | Only if new dependencies |
 
@@ -711,7 +754,7 @@ Phase 2: Scenario Interpretation ..... ✅
 Phase 3: Customization Planning ...... ✅
 Phase 4: Notebook Generation ......... ✅
 Phase 5: Finalization & Delivery ..... ✅
-         ├─ Upload to Fabric ........ <✅/⏭️>
+         ├─ Upload (if applicable) .. <✅/⏭️>
          ├─ Table Archiving ......... <✅/⏭️>
          └─ Pipeline Execution ...... <✅/⏭️>
 

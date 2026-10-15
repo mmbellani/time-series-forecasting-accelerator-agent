@@ -1,10 +1,12 @@
 ---
 name: forecast-explainability
-description: "Explain time-series forecast results and analyze the feature weights (model importances) that drive them. USE FOR: explain forecast, why did the forecast go up/down, interpret model, feature importance, feature weights, which features matter, gain vs split importance, SHAP values, per-cluster feature importance, explain a single prediction, forecast contribution breakdown, model interpretability, translate model weights into a business narrative. Built for the LightGBM + mlforecast pipeline (notebooks 05 Feature Engineering and 06 Train/Tune) that produces per-cluster LGBMRegressor models and <scenario>_forecasts tables. DO NOT USE FOR: training or tuning models (use notebook 06), feature engineering (use notebook 05), data cleaning (use notebook 01), or clustering (use notebook 04)."
+description: "Explain time-series forecast results and analyze the feature weights (model importances) that drive them. USE FOR: explain forecast, why did the forecast go up/down, interpret model, feature importance, feature weights, which features matter, gain vs split importance, SHAP values, per-cluster feature importance, explain a single prediction, forecast contribution breakdown, model interpretability, translate model weights into a business narrative. Built for the LightGBM + mlforecast pipeline (notebooks 05 Feature Engineering and 06 Train/Tune) that produces per-cluster LGBMRegressor models and <scenario>_forecasts tables. RUN AFTER error-analysis so explanations focus on the selected high-error models, series, dates, and buckets. DO NOT USE FOR: training or tuning models (use notebook 06), feature engineering (use notebook 05), data cleaning (use notebook 01), or clustering (use notebook 04)."
 license: MIT
 metadata:
   author: Time Series Forecasting Accelerator
   version: "1.0.0"
+  runs_after: error-analysis
+  runs_before: hierarchical-reconciliation
 ---
 
 # Forecast Explainability Skill
@@ -23,6 +25,12 @@ It is designed for the Time Series Forecasting Accelerator pipeline, where:
   `booster.feature_name_`.
 - Outputs land in Lakehouse tables such as `<scenario>_features`, `<scenario>_forecasts`, and
   `<scenario>_clustered`.
+
+## Run this AFTER `error-analysis`
+
+Use the models, series, dates, and worst calendar buckets selected by `error-analysis`
+to scope global importance and point-level explanations. After reviewing those findings,
+run `hierarchical-reconciliation` when an approved hierarchy is available.
 
 ## When To Use
 

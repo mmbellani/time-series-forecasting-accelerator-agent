@@ -64,7 +64,20 @@ Required fields per entry:
 ### Checkpoints
 <!-- AGENT: If Phase 1 paused at checkpoints, reference CP-#### entries from the Checkpoint Log -->
 
-### Fabric Connection
+### Source and Execution Context
+
+<!-- AGENT: Set data_source to exactly Fabric, Databricks, or Local. notebook_prefix
+must equal data_source. Fill only applicable source fields, never credentials.
+Preserve this context in every phase; do not infer Fabric from missing fields. -->
+
+| Attribute | Value |
+|-----------|-------|
+| data_source | |
+| notebook_prefix | |
+| execution_environment | |
+| source_details | |
+
+### Fabric Connection (Fabric Only)
 | Attribute | Value |
 |-----------|-------|
 | Workspace Name | |
@@ -73,10 +86,27 @@ Required fields per entry:
 | Lakehouse ID | |
 | SQL Endpoint | |
 
+### Databricks Connection (Databricks Only)
+| Attribute | Value |
+|-----------|-------|
+| Workspace Host / Auth Profile Name | |
+| Catalog / Schema | |
+| Qualified Tables or File/Volume Paths | |
+| SQL Warehouse / Compute | |
+| File Formats / Read Options (if applicable) | |
+
+### Local Files (Local Only)
+| Attribute | Value |
+|-----------|-------|
+| Absolute File Paths | |
+| Formats / Read Options | |
+| Python/Jupyter Kernel | |
+| Local Spark (if required) | |
+
 ### Source Data
 | Attribute | Value |
 |-----------|-------|
-| Table Name | |
+| Qualified Table(s) or Absolute File Path(s) | |
 | Total Rows | |
 | Date Range | |
 | Unique Series | |
@@ -158,6 +188,37 @@ Required fields per entry:
 ### Output Folder
 <!-- AGENT: e.g., .output/hardware_monthly_demand_forecast_20251130/ -->
 
+### Notebook Files (`notebook_files`)
+
+<!-- AGENT: Resolve notebook_prefix from Phase 1 to Fabric, Databricks, or Local.
+Record full output paths and use these exact names for generation, checkpoints,
+uploads, execution, and delivery. Shared templates remain unprefixed. -->
+
+| Number | Generated Filename | Full Output Path |
+|--------|--------------------|------------------|
+| 01 | `<notebook_prefix> 01 DataPreparation.ipynb` | |
+| 02 | `<notebook_prefix> 02 ExploratoryDataAnalysis.ipynb` | |
+| 03 | `<notebook_prefix> 03 ProfilingIntermittent.ipynb` | |
+| 04 | `<notebook_prefix> 04 Clustering.ipynb` | |
+| 05 | `<notebook_prefix> 05 FeatureEngineering.ipynb` | |
+| 06 | `<notebook_prefix> 06 TrainTestSelectTune.ipynb` | |
+
+### Artifact Locations (`artifact_locations`)
+
+<!-- AGENT: Record qualified tables or absolute file/model paths and formats.
+Add a row per cluster-specific feature artifact. Update with actual locations in Phase 4.
+Elsewhere in this report, "Output Table" also covers a recorded local file artifact. -->
+
+| Logical Artifact | Table / File / Model Location | Format |
+|------------------|-------------------------------|--------|
+| prepared | | |
+| profiled | | |
+| clustered | | |
+| features (global) | | |
+| features_cluster_{group} | | |
+| forecasts | | |
+| models | | |
+
 ### Change Summary
 | Risk Level | Count | Description |
 |------------|-------|-------------|
@@ -170,17 +231,22 @@ Required fields per entry:
 |--------|------|-----------|
 | | | |
 
-### Notebook 02: Profiling
+### Notebook 02: Exploratory Data Analysis
 | Change | Risk | From → To |
 |--------|------|-----------|
 | | | |
 
-### Notebook 03: Clustering
+### Notebook 03: Profiling
 | Change | Risk | From → To |
 |--------|------|-----------|
 | | | |
 
-### Notebook 04: Feature Engineering
+### Notebook 04: Clustering
+| Change | Risk | From → To |
+|--------|------|-----------|
+| | | |
+
+### Notebook 05: Feature Engineering
 | Change | Risk | From → To |
 |--------|------|-----------|
 | | | |
@@ -202,12 +268,12 @@ Required fields per entry:
 ### Summary
 | Sub-Phase | Notebook | Status | Cells | Output Table | Completed |
 |-----------|----------|--------|-------|--------------|-----------|
-| 4.1 | 01 Data Preparation | ⏳ Not Started | - | - | - |
-| 4.2 | 02 EDA | ⏳ Not Started | - | - | - |
-| 4.3 | 03 Profiling | ⏳ Not Started | - | - | - |
-| 4.4 | 04 Clustering | ⏳ Not Started | - | - | - |
-| 4.5 | 05 Feature Engineering | ⏳ Not Started | - | - | - |
-| 4.6 | 06 Train/Tune | ⏳ Not Started | - | - | - |
+| 4.1 | `<notebook_prefix> 01 DataPreparation.ipynb` | ⏳ Not Started | - | - | - |
+| 4.2 | `<notebook_prefix> 02 ExploratoryDataAnalysis.ipynb` | ⏳ Not Started | - | - | - |
+| 4.3 | `<notebook_prefix> 03 ProfilingIntermittent.ipynb` | ⏳ Not Started | - | - | - |
+| 4.4 | `<notebook_prefix> 04 Clustering.ipynb` | ⏳ Not Started | - | - | - |
+| 4.5 | `<notebook_prefix> 05 FeatureEngineering.ipynb` | ⏳ Not Started | - | - | - |
+| 4.6 | `<notebook_prefix> 06 TrainTestSelectTune.ipynb` | ⏳ Not Started | - | - | - |
 
 ---
 
@@ -361,24 +427,27 @@ Required fields per entry:
 
 ### Notebook Upload
 
-<!-- AGENT: Fill after upload decision -->
+<!-- AGENT: Fill after upload decision. Local execution needs no upload.
+Lakehouse attachment applies only to Fabric; record Databricks workspace folder
+and compute instead. Resolve notebook names from notebook_files. -->
 
 | Attribute | Value |
 |-----------|-------|
 | Upload Status | ⏳ Not Started |
 | Workspace | |
+| Workspace Folder / Compute (Databricks) | |
 | Notebooks Uploaded | |
 | Overwrite Required | |
 | Lakehouse Attached | |
 
 | Notebook | Upload Status | Lakehouse |
 |----------|---------------|-----------|
-| Fabric 01 DataPreparation | | |
-| Fabric 02 ExploratoryDataAnalysis | | |
-| Fabric 03 ProfilingIntermittent | | |
-| Fabric 04 Clustering | | |
-| Fabric 05 FeatureEngineering | | |
-| Fabric 06 TrainTestSelectTune | | |
+| `<notebook_prefix> 01 DataPreparation` | | |
+| `<notebook_prefix> 02 ExploratoryDataAnalysis` | | |
+| `<notebook_prefix> 03 ProfilingIntermittent` | | |
+| `<notebook_prefix> 04 Clustering` | | |
+| `<notebook_prefix> 05 FeatureEngineering` | | |
+| `<notebook_prefix> 06 TrainTestSelectTune` | | |
 
 ---
 
@@ -409,12 +478,12 @@ Required fields per entry:
 
 | Notebook | Status | Job ID | Duration | Output Table |
 |----------|--------|--------|----------|--------------|
-| 01 DataPreparation | ⏳ | | | |
-| 02 ExploratoryDataAnalysis | ⏳ | | | |
-| 03 ProfilingIntermittent | ⏳ | | | |
-| 04 Clustering | ⏳ | | | |
-| 05 FeatureEngineering | ⏳ | | | |
-| 06 TrainTestSelectTune | ⏳ | | | |
+| `<notebook_prefix> 01 DataPreparation` | ⏳ | | | |
+| `<notebook_prefix> 02 ExploratoryDataAnalysis` | ⏳ | | | |
+| `<notebook_prefix> 03 ProfilingIntermittent` | ⏳ | | | |
+| `<notebook_prefix> 04 Clustering` | ⏳ | | | |
+| `<notebook_prefix> 05 FeatureEngineering` | ⏳ | | | |
+| `<notebook_prefix> 06 TrainTestSelectTune` | ⏳ | | | |
 
 ---
 
@@ -428,12 +497,12 @@ Required fields per entry:
 
 | File | Status |
 |------|--------|
-| Fabric 01 DataPreparation.ipynb | |
-| Fabric 02 ExploratoryDataAnalysis.ipynb | |
-| Fabric 03 ProfilingIntermittent.ipynb | |
-| Fabric 04 Clustering.ipynb | |
-| Fabric 05 FeatureEngineering.ipynb | |
-| Fabric 06 TrainTestSelectTune.ipynb | |
+| `<notebook_prefix> 01 DataPreparation.ipynb` | |
+| `<notebook_prefix> 02 ExploratoryDataAnalysis.ipynb` | |
+| `<notebook_prefix> 03 ProfilingIntermittent.ipynb` | |
+| `<notebook_prefix> 04 Clustering.ipynb` | |
+| `<notebook_prefix> 05 FeatureEngineering.ipynb` | |
+| `<notebook_prefix> 06 TrainTestSelectTune.ipynb` | |
 | completion_report.md | |
 | requirements.txt | |
 
@@ -450,17 +519,18 @@ Required fields per entry:
 <!-- AGENT: Customize based on what was done -->
 
 **If notebooks were uploaded and executed:**
-- Forecasts are available in table: `<scenario>_forecasts`
+- Forecasts are available at the recorded `artifact_locations` entry for forecasts.
 - Review archived tables if needed: `archive_*`
 
 **If notebooks were uploaded but not executed:**
-1. Open Fabric workspace
-2. Run notebooks in order: 01 → 02 → 03 → 04 → 05
+1. Open the confirmed Fabric or Databricks workspace and configured runtime.
+2. Run notebooks in order: 01 → 02 → 03 → 04 → 05 → 06.
 
 **If notebooks are local only:**
-1. Import notebooks to Fabric workspace
-2. Attach lakehouse to each notebook
-3. Run notebooks in order: 01 → 02 → 03 → 04 → 05
+1. Fabric execution: import to the confirmed workspace and attach the Lakehouse.
+2. Databricks execution: import to the confirmed workspace folder and select compute.
+3. Local execution: open in the configured Python/Jupyter kernel; no upload is needed.
+4. Verify recorded data/model locations and run 01 → 02 → 03 → 04 → 05 → 06.
 
 ---
 

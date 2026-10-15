@@ -1,6 +1,7 @@
 # Phase 4: Notebook Generation & Execution
 
-Generate and execute a single customized notebook, creating real output tables in the Lakehouse.
+Generate and execute a single source-prefixed customized notebook, creating real
+outputs in the approved Fabric, Databricks, or local storage.
 
 ## Prerequisites
 
@@ -34,12 +35,32 @@ At the start of this phase:
 
 ### Context from Prior Phases (via completion report):
   - scenario_name, output_folder path
+  - data_source, notebook_prefix, source_details, execution_environment
+  - notebook_files (resolved paths for 01-06), artifact_locations
   - customization_plan (per-notebook changes)
   - new_cells (cells to add with code templates)
   - skip_sections (sections/notebooks to skip)
   - dependencies (new packages if any)
-  - workspace_id, lakehouse_id (for Livy sessions)
+  - source-specific connection/compute details (workspace_id and lakehouse_id only for Fabric)
   - Phase 4.x status for prior notebooks
+
+### Source and Naming Validation
+
+- Restore the Phase 1 source contract and Phase 3 `notebook_files` mapping. If either
+  is missing, confirm and record it before generating anything; do not default to Fabric.
+- Use `<notebook_prefix> <NN> <NotebookName>.ipynb`, where `notebook_prefix` is the
+  confirmed `Fabric`, `Databricks`, or `Local` data source. Resolve placeholders in
+  filenames, headers, checkpoint logs, progress messages, and saved artifact paths.
+- Read the unprefixed templates from `src/notebooks/`; never modify or rename them.
+- Apply the approved source-specific readers, writers, runtime configuration, and
+  model locations in every notebook. A new filename alone is not a source adaptation.
+- Treat dataset/table names in the examples below as logical names. Resolve each
+  through `artifact_locations`: Fabric Lakehouse tables, Databricks qualified
+  catalog/schema tables or file paths, or local files. Update all downstream loads,
+  including per-cluster feature loads. Do not require Spark for a local workflow
+  unless the approved plan calls for it.
+- On resume, use the recorded notebook path. Do not silently rename previously
+  generated files or switch sources; confirm any migration with the user.
 
 ### Dependency Validation
 
@@ -73,9 +94,9 @@ If this is notebook 01, create the timestamped output folder:
 .output/<scenario_name>_<YYYYMMDD>/
 ```
 
-### 2. Initialize Livy Session
+### 2. Initialize the Confirmed Execution Environment
 
-Follow the Livy Session Management Rules defined in the agent definition:
+For Fabric execution, follow the Livy Session Management Rules defined in the agent definition:
 
 1. **Check for existing sessions** via `livy_list_sessions()`
 2. **If idle session exists** → Reuse it
@@ -83,16 +104,23 @@ Follow the Livy Session Management Rules defined in the agent definition:
 4. **If no session exists** → Create a new one
 5. **Never close the session** — leave it alive for next sub-phase
 
+For Databricks execution, discover the configured execution tools/connector, verify
+the approved workspace and compute, and execute cells in that context. Do not call
+Fabric Livy APIs. For Local execution, select the approved Python/Jupyter kernel and
+verify source/output paths; initialize local Spark only when required by the plan.
+If execution is unavailable, report the blocker and obtain approval for an explicitly
+unvalidated draft. Do not mark it or dependent notebooks executed/complete.
+
 ## Cell-by-Cell Execution Process
 
 For the specified notebook, build and execute incrementally:
 
-1. **Read the template notebook** (e.g., `Fabric 01 DataPreparation.ipynb`)
+1. **Read the template notebook** (e.g., `src/notebooks/01 DataPreparation.ipynb`)
 2. **Read the customization plan** from completion report (Phase 3 section)
 3. **For each cell** in the template:
    - Apply customizations (parameter substitution, structural changes)
    - If markdown cell: Append to output notebook (no execution)
-   - If code cell: Execute via Livy, then append on success
+   - If code cell: Execute in the confirmed environment, then append on success
 4. **Save notebook incrementally** after each successful cell
 5. **Update completion report** with sub-phase results
 
@@ -115,7 +143,7 @@ During Phase 4 execution, treat notebook checkpoints as blocking stops.
    - “set number of clusters to try” → series count + recommended search range; prior run results if available.
 4. **Log a Pending checkpoint entry** in `completion_report.md` (Checkpoint Log) including:
    - phase: `4.<N>`
-   - notebook: `0<N> <NotebookName>`
+   - notebook: `<notebook_prefix> 0<N> <NotebookName>.ipynb`
    - cell index / step: the template notebook cell index of this checkpoint markdown cell
    - raw checkpoint text: the checkpoint markdown content
    - questions asked: 1–3 concrete questions derived from the checkpoint text (prefer multiple-choice)
@@ -141,7 +169,8 @@ If the process fails at cell 8, the notebook on disk has cells 1-7 saved.
 
 ### No Output Capture
 
-Save notebooks **without execution outputs** — clean cells only. User runs the notebook in Fabric to see fresh outputs.
+Save notebooks **without execution outputs** — clean cells only. The user runs the
+notebook in the confirmed environment to see fresh outputs.
 
 ---
 
@@ -149,8 +178,8 @@ Save notebooks **without execution outputs** — clean cells only. User runs the
 
 ### Notebook 01: Data Preparation
 
-**Template:** `src/notebooks/Fabric 01 DataPreparation.ipynb`
-**Output:** `<output_folder>/Fabric 01 DataPreparation.ipynb`
+**Template:** `src/notebooks/01 DataPreparation.ipynb`
+**Output:** `<output_folder>/<notebook_prefix> 01 DataPreparation.ipynb`
 
 #### Customization Steps:
 
@@ -160,6 +189,8 @@ Save notebooks **without execution outputs** — clean cells only. User runs the
    Time Series Forecasting Accelerator
    ====================================
    Scenario: <scenario_name>
+   Data Source: <data_source>
+   Notebook: <notebook_prefix> 01 DataPreparation.ipynb
    Generated: <YYYY-MM-DD>
    
    Key Parameters:
@@ -172,9 +203,9 @@ Save notebooks **without execution outputs** — clean cells only. User runs the
    """
    ```
 
-2. **Update table references**:
-   - Input table: `<user_table>`
-   - Output table: `<scenario_name>_prepared`
+2. **Update source and output references**:
+   - Input: verified table(s) or file(s) and read options from `source_details`
+   - Prepared output: `artifact_locations` entry for `<scenario_name>_prepared`
 
 3. **Update column mappings**:
    - Date column: `<date_column>`
@@ -197,8 +228,8 @@ Save notebooks **without execution outputs** — clean cells only. User runs the
 ---
 ### Notebook 02: Exploratory Data Analysis
 
-**Template:** `src/notebooks/Fabric 02 ExploratoryDataAnalysis.ipynb`
-**Output:** `<output_folder>/Fabric 02 ExploratoryDataAnalysis.ipynb`
+**Template:** `src/notebooks/02 ExploratoryDataAnalysis.ipynb`
+**Output:** `<output_folder>/<notebook_prefix> 02 ExploratoryDataAnalysis.ipynb`
 
 
 # Phase 4.2: Exploratory Data Analysis
@@ -207,7 +238,7 @@ Generate and execute a customized EDA notebook on `df_final` (the output of Note
 
 ## Prerequisites
 
-- Phase 4.1 completed: Notebook 01 has been executed and `<scenario>_prepared` table exists in the Lakehouse
+- Phase 4.1 completed: Notebook 01 has been executed and `<scenario>_prepared` exists at its recorded artifact location
 - **Completion report** from prior phases (user provides path)
 - Agent file `time-series-forecaster.md` provides persona and boundaries
 
@@ -215,8 +246,9 @@ Generate and execute a customized EDA notebook on `df_final` (the output of Note
 
 At the start of this phase:
 1. Read the completion report from the path provided by user
-2. Extract: `scenario_name`, `output_folder`, `workspace_id`, `lakehouse_id`
-3. Extract from Phase 1: `date_var`, `unique_id`, `y` (target), `frequency`, `LAKEHOUSE_NAME`, prepared table name
+2. Extract: `scenario_name`, `output_folder`, `data_source`, `notebook_prefix`,
+   `notebook_files`, `source_details`, `execution_environment`, `artifact_locations`
+3. Extract from Phase 1: `date_var`, `unique_id`, `y` (target), `frequency`, and the prepared artifact location
 4. Verify Phase 4.1 (Notebook 01) status is ✅ Complete
 
 If Phase 4.1 is not complete:
@@ -230,14 +262,14 @@ Please run Phase 4.1 first:
 
 ## Template Reference
 
-Use `src/notebooks/Fabric 02 ExploratoryDataAnalysis.ipynb` as the template.
+Use `src/notebooks/02 ExploratoryDataAnalysis.ipynb` as the template.
 This template contains 9 sections that must be customized.
 
 ## Customization Steps
 
 ### Step 1: Read the Template
 
-Read the template notebook from `src/notebooks/Fabric 02 ExploratoryDataAnalysis.ipynb`.
+Read the template notebook from `src/notebooks/02 ExploratoryDataAnalysis.ipynb`.
 
 ### Step 2: Apply Parameter Substitutions
 
@@ -249,8 +281,8 @@ Update the **Configuration** cell with values from the completion report:
 | `unique_id` | Phase 1 data discovery (e.g., `'STORE_LOCATION_ID'`) |
 | `y` | Phase 1 data discovery (target column, e.g., `'TOTAL_NET_SALES'`) |
 | `frequency` | Phase 1 data discovery (e.g., `'W'`) |
-| `LAKEHOUSE_NAME` | Phase 1 Fabric connection |
-| `INPUT_TABLE` | Phase 4.1 output table name (e.g., `'<scenario>_prepared'` or `'df_final'`) |
+| Source namespace / path | Phase 1 source details; `LAKEHOUSE_NAME` only for Fabric |
+| Input table / file | Phase 4.1 prepared artifact location |
 
 ### Step 3: Customize Sections Based on Data Profile
 
@@ -313,23 +345,24 @@ These additions are **medium risk** — ask the user before adding.
 
 Save the customized notebook to:
 ```
-.output/<scenario_name>_<YYYYMMDD>/Fabric 02 ExploratoryDataAnalysis.ipynb
+.output/<scenario_name>_<YYYYMMDD>/<notebook_prefix> 02 ExploratoryDataAnalysis.ipynb
 ```
 
 ## Execution
 
-### Option A: Execute via Livy (Recommended)
+### Option A: Execute in the Confirmed Environment (Recommended)
 
-Execute cells sequentially via Livy session, following the same protocol as Phase 4 notebook generation:
+Execute cells sequentially, following the same source-specific setup as Phase 4 notebook generation:
 
-1. **Reuse or create a Livy session** (follow Livy Session Management Rules from agent definition)
-2. Execute each code cell via `livy_run_statement()`
+1. Reuse or initialize the confirmed Fabric, Databricks, or Local execution context
+2. Execute each code cell using that environment's tools (`livy_run_statement()` only for Fabric)
 3. Capture outputs (especially the Section 9 summary)
 4. On error: diagnose, fix, retry (up to 3 attempts per cell)
 
 ### Option B: Save Only (If User Prefers)
 
-Save the notebook without executing. User can run it manually in Fabric.
+Save an explicitly unvalidated draft. The user can run it manually in the confirmed
+environment. Record "Not executed"; do not invent EDA findings or mark execution complete.
 
 ## Checkpoint 2.1: Present EDA Findings
 
@@ -363,7 +396,7 @@ After execution, present findings:
 
 ---
 
-**Notebook saved to:** `.output/<scenario_name>_<YYYYMMDD>/Fabric 02 ExploratoryDataAnalysis.ipynb`
+**Notebook saved to:** `.output/<scenario_name>_<YYYYMMDD>/<notebook_prefix> 02 ExploratoryDataAnalysis.ipynb`
 
 Reply with your observations, then type `continue` to record this checkpoint.
 ```
@@ -371,7 +404,7 @@ Reply with your observations, then type `continue` to record this checkpoint.
 Checkpoint protocol (hard stop):
 1. Log this checkpoint as **Pending** in `completion_report.md`:
    - phase: `4.2`
-   - notebook: `Fabric 02 ExploratoryDataAnalysis.ipynb`
+   - notebook: `<notebook_prefix> 02 ExploratoryDataAnalysis.ipynb`
    - cell/step: `Checkpoint 2.1`
    - raw checkpoint text: the EDA summary above
    - questions asked: (none — informational checkpoint)
@@ -391,7 +424,7 @@ Add a Phase 4.2 section to the completion report:
 | Status | ✅ Complete |
 | Started | <date> |
 | Completed | <date> |
-| Session ID | <livy_session_id or "Not executed"> |
+| Execution Context | <environment and session/kernel/run ID, or "Not executed"> |
 
 **Dataset Shape:** <rows> × <columns>
 **Target Statistics:** mean=<>, std=<>, skew=<>, zeros=<>%
@@ -407,8 +440,8 @@ Add a Phase 4.2 section to the completion report:
 
 ## Error Handling
 
-- If Lakehouse table not found: fall back to local parquet at `data/<table_name>.parquet`
-- If Livy session fails: save notebook without execution, inform user
+- If a source table/file is missing: report the exact location and stop; do not silently switch sources
+- If execution fails: preserve progress, record the failure, and ask before saving an unvalidated draft
 - If a visualization cell fails (e.g., no categorical columns): catch gracefully with informative message, continue to next section
 
 
@@ -416,8 +449,8 @@ Add a Phase 4.2 section to the completion report:
 ---
 ### Notebook 03: Profiling & Intermittent Classification
 
-**Template:** `src/notebooks/Fabric 03 ProfilingIntermittent.ipynb`
-**Output:** `<output_folder>/Fabric 03 ProfilingIntermittent.ipynb`
+**Template:** `src/notebooks/03 ProfilingIntermittent.ipynb`
+**Output:** `<output_folder>/<notebook_prefix> 03 ProfilingIntermittent.ipynb`
 
 #### Customization Steps:
 
@@ -444,15 +477,16 @@ Add a Phase 4.2 section to the completion report:
 
 ## Error Handling
 
-- If Lakehouse table not found: fall back to local parquet at `data/<table_name>.parquet`
-- If Livy session fails: save notebook without execution, inform user
+- If a source table/file is missing: report the exact location and stop; do not silently switch sources
+- If execution fails: preserve progress, record the failure, and ask before saving an unvalidated draft
 - If a visualization cell fails (e.g., no categorical columns): catch gracefully with informative message, continue to next section
 ---
 
 ### Notebook 04: Clustering
 
-**Template:** `src/notebooks/Fabric 04 Clustering.ipynb`
-**Output:** `<output_folder>/Fabric 04 Clustering.ipynb`
+**Template:** `src/notebooks/04 Clustering.ipynb`
+**Output:** `<output_folder>/<notebook_prefix> 04 Clustering.ipynb`
+**Required interpretation report:** `<output_folder>/clustering_interpretation/regular_cluster_interpretation.md`
 
 #### Customization Steps:
 
@@ -478,17 +512,132 @@ Add a Phase 4.2 section to the completion report:
    # CUSTOMIZED: Cluster count based on series count
    N_CLUSTERS = <n_clusters>
    ```
+
+6. **Interpret every regular cluster with the data scientist.** Apply the workflow
+   below for both default Euclidean clustering and the `clustering-dtw` skill.
+   Cluster-size summaries alone do not satisfy this requirement.
+
+#### Regular-Cluster Interpretation Workflow
+
+Start from the scenario description, confirmed data profile, Notebook 02 EDA findings,
+Notebook 03 profiles, and prior checkpoint answers in the completion report. Do not ask
+the user to repeat known information. Interpret only clusters of `regular` series;
+non-regular profiles keep their existing labels and are outside this report's scope.
+
+Add the following two markdown checkpoint cells to the generated notebook in addition
+to the existing cluster-count checkpoint. Use the exact `✅ CHECK POINT` marker and the
+stable step IDs below. Record each inserted checkpoint's generated cell index and next
+workflow step in the completion report, rather than treating it as a template cell index.
+On resume, use this recorded step so neither checkpoint is skipped or repeated.
+
+##### Checkpoint 4.4-context: Clarify Business Context
+
+Place `✅ CHECK POINT — 4.4-context: Clarify regular-cluster business context` before
+writing business interpretations. Present the known context, available attributes, data
+frequency, date coverage, and feasible diagnostics first. Ask focused follow-up questions
+one at a time, choosing only those that resolve actual uncertainty:
+
+- What entity does a series represent, and which verified attributes identify meaningful
+  segments (e.g., customer type, store format, product category, region)?
+- What calendar, climate, operating schedules, promotions, or exceptional events could
+  explain the observed patterns? Which geography and holiday calendar apply?
+- Which business decision should the interpretation support, and are there known
+  closures, stockouts, tariff changes, or data-quality issues to account for?
+
+Tailor these to the domain. For energy, clarify residential/industrial customer metadata,
+weekday/weekend operations, heating/cooling season, and whether the frequency resolves
+intraday peaks. For supermarket sales, clarify Christmas or other local holiday periods,
+promotions, store closures, product mix, and whether the target is units or revenue.
+These are questions and hypotheses, not predefined cluster labels.
+
+Log questions and answers with the source-prefixed Notebook 04 name. Follow the hard-stop
+protocol: wait for answers and `continue`, record completion and stop; resume the next step
+in a new chat. If context remains unavailable, explicitly record "unknown" and use neutral
+shape descriptions rather than inventing business identities.
+
+##### Build and Save the Interpretation Report
+
+After the context checkpoint, join actual regular-series memberships to original,
+unwarped observations and approved metadata using verified series keys. For every observed
+regular cluster, compute and describe:
+
+- Number and share of regular series, representative series IDs, date coverage, and
+  within-cluster variability. State how representative examples were selected.
+- Trend, seasonal/calendar patterns, peaks and troughs, and original-unit magnitude;
+  show representative-series and calendar-profile charts with relative links in the report.
+- Quantitative evidence for proposed patterns (e.g., holiday-period sales relative to an
+  explicitly defined non-holiday baseline, or weekday/weekend demand) at the available
+  frequency, including sample counts and observed repetitions across years.
+- Metadata composition when available, limitations, contradictory member patterns, and
+  alternative explanations. Do not hide heterogeneous clusters behind a single centroid.
+
+For DTW, inspect original dates before attributing a peak to Christmas, summer, or another
+event: time warping can align peaks from different dates, and standardization removes
+level differences. A standardized centroid cannot establish volume or customer type.
+Do not infer intraday behavior from daily/weekly data or claim recurring seasonality from
+one event. Shape and metadata associations are not proof of causality.
+
+Create the `<output_folder>/clustering_interpretation/` folder if needed and save
+`regular_cluster_interpretation.md` inside it as a **Draft** before review. Resolve
+chart links relative to this report folder and use the nested path in notebook and
+completion-report links.
+Include scenario/source, notebook and dataset references, method/run configuration,
+analysis window and frequency, confirmed context and checkpoint references, evidence
+chart links, and this overview:
+
+| Cluster ID | Regular series (n, %) | Observed pattern | Proposed interpretation | Evidence / limitations | Review status |
+|------------|-----------------------|------------------|-------------------------|------------------------|---------------|
+| <actual cluster ID> | <n, %> | <measured shape> | <hypothesis or neutral label> | <measurements, metadata, gaps> | Draft |
+
+Add a detailed section for **each** regular cluster with evidence, business hypothesis,
+confidence with rationale, unresolved questions, and potential forecasting implications.
+For example, describe a cluster as "December-peaking sales" if supported by dates and
+measurements; propose "Christmas-sensitive demand" only with supporting local calendar
+context. Use "weekday-dominant demand, consistent with industrial operations" as a
+hypothesis until customer metadata or data-scientist knowledge supports that interpretation.
+For DTW, use the expanded `clustering-dtw/templates/clustering_dtw_report.md` template.
+`narrate_clusters()` may supply technical summaries, but cannot replace this interpretation.
+
+Keep cluster IDs and `profile_cluster` unchanged: business labels belong in the report,
+not silently in the downstream schema. Record suggested features or segmentation changes
+as recommendations requiring separate approval, not automatic model or cluster changes.
+
+##### Checkpoint 4.4-review: Review Each Cluster Interpretation
+
+Place `✅ CHECK POINT — 4.4-review: Review regular-cluster interpretations` after saving
+the draft and before declaring Notebook 04 complete. Show the report path, cluster overview,
+and evidence. Ask the data scientist, one question at a time, whether each proposed
+interpretation is supported, should be revised, or should remain unresolved. Ask targeted
+follow-ups for ambiguous clusters and known counterexamples; do not invent agreement.
+
+Log this checkpoint and stop. On answers and `continue`, record the decisions and update
+the same report with per-cluster **Accepted**, **Revised**, or **Unresolved** status,
+supporting corrections, and remaining uncertainties, then stop. If a correction needs new
+analysis, keep the affected interpretation pending and perform that analysis and another
+review on resume. User acceptance is business validation, not statistical proof.
+
+Only mark interpretation complete after the review is recorded and the persisted report
+covers every actual regular cluster. Explicitly unresolved interpretations may remain if
+the data scientist approves that limitation. Link the report from a notebook markdown cell
+and the Phase 4.4 completion report; record its path and review status for Notebook 05.
+Pass accepted findings as context for feature planning without automatically changing it.
+
+If clustering is skipped or no regular series are available, still create the report with
+**Not applicable**, the reason, and observed profile counts; do not fabricate clusters or
+force business-interpretation checkpoints. If clustering or evidence generation fails,
+record **Blocked/Partial** and the specific failure rather than claiming a complete report.
+
 ## Error Handling
 
-- If Lakehouse table not found: fall back to local parquet at `data/<table_name>.parquet`
-- If Livy session fails: save notebook without execution, inform user
+- If a source table/file is missing: report the exact location and stop; do not silently switch sources
+- If execution fails: preserve progress, record the failure, and ask before saving an unvalidated draft
 - If a visualization cell fails (e.g., no categorical columns): catch gracefully with informative message, continue to next section
 ---
 
 ### Notebook 05: Feature Engineering
 
-**Template:** `src/notebooks/Fabric 05 FeatureEngineering.ipynb`
-**Output:** `<output_folder>/Fabric 05 FeatureEngineering.ipynb`
+**Template:** `src/notebooks/05 FeatureEngineering.ipynb`
+**Output:** `<output_folder>/<notebook_prefix> 05 FeatureEngineering.ipynb`
 
 #### Key Sections in Template
 
@@ -567,15 +716,15 @@ Columns are classified into five categories before feature engineering begins:
    ```
 ## Error Handling
 
-- If Lakehouse table not found: fall back to local parquet at `data/<table_name>.parquet`
-- If Livy session fails: save notebook without execution, inform user
+- If a source table/file is missing: report the exact location and stop; do not silently switch sources
+- If execution fails: preserve progress, record the failure, and ask before saving an unvalidated draft
 - If a visualization cell fails (e.g., no categorical columns): catch gracefully with informative message, continue to next section
 ---
 
 ### Notebook 06: Train/Test/Select/Tune
 
-**Template:** `src/notebooks/Fabric 06 TrainTestSelectTune.ipynb`
-**Output:** `<output_folder>/Fabric 06 TrainTestSelectTune.ipynb`
+**Template:** `src/notebooks/06 TrainTestSelectTune.ipynb`
+**Output:** `<output_folder>/<notebook_prefix> 06 TrainTestSelectTune.ipynb`
 
 #### Checkpoints in This Notebook
 
@@ -607,8 +756,8 @@ Each checkpoint follows the standard **Checkpoint Stop Protocol**: compute diagn
    y = '<target_column>'
    frequency = '<freq>'  # e.g., 'W', 'MS', 'D'
    selection_metric = '<metric>'  # e.g., 'MAE', 'WMAPE', 'RMSE'
-   INPUT_TABLE_NAME = "<lakehouse>.<scenario_name>_features"
-   PROFILE_CLUSTER_TABLE_NAME = "<lakehouse>.<scenario_name>_clustered"
+   INPUT_LOCATION = "<recorded global features table or file path>"
+   PROFILE_CLUSTER_LOCATION = "<recorded clustered table or file path>"
    ```
 
 4. **Configure train/test split** (set after Checkpoint 6.1):
@@ -688,8 +837,8 @@ The notebook trains models in **two passes** using different feature datasets pr
 
 **Pass 2 — By Profile-Cluster:**
 - For each `profile_cluster` group, load the **dedicated per-cluster feature table** created by Notebook 05:
-  - Lakehouse table: `<scenario_name>_features_cluster_{group}` (e.g., `_features_cluster_0`, `_features_cluster_intermittent`)
-  - Local fallback: `data/df_features_cluster_{group}.parquet`
+  - Resolve `<scenario_name>_features_cluster_{group}` through `artifact_locations`
+    to the exact qualified table or local file written by Notebook 05; no implicit fallback
 - Train a separate LightGBM model using only the series and features from that cluster's table
 - Apply the same rolling-origin evaluation and OOS forecasting
 - Compute per-group and overall metrics
@@ -719,12 +868,14 @@ The notebook trains models in **two passes** using different feature datasets pr
 
 ### For Each Code Cell:
 
-1. **Execute via Livy**:
+1. **Execute in the confirmed environment**. For Fabric:
    ```
    result = livy_run_statement(workspace_id, lakehouse_id, session_id, cell_code, with_wait=True)
    ```
+   For Databricks or Local, use the configured compute or notebook kernel instead.
 
-2. **Check result state**:
+2. **Check result state** (Fabric examples below; inspect the equivalent result,
+   exceptions, and logs in Databricks/Local):
    - `available` with `status: ok` → Success, append cell to notebook
    - `available` with `status: error` → Error, apply retry protocol
    - `error` state → Session error, check logs
@@ -744,7 +895,7 @@ If all retries fail, ask the user inline:
 ```
 ⚠️ **Cell Execution Failed — Your Input Needed**
 
-**Notebook:** Fabric 0<N> <NotebookName>.ipynb
+**Notebook:** <notebook_prefix> 0<N> <NotebookName>.ipynb
 **Cell:** <cell number> of <total cells> (<cell description>)
 
 **Code:**
@@ -802,8 +953,8 @@ If user chooses to skip a cell, add it with a marker:
 - Note in completion report that full data execution wasn't possible
 
 ## Error Handling
-- If Lakehouse table not found: fall back to local parquet at `data/<table_name>.parquet`
-- If Livy session fails: save notebook without execution, inform user
+- If a source table/file is missing: report the exact location and stop; do not silently switch sources
+- If execution fails: preserve progress, record the failure, and ask before saving an unvalidated draft
 - If a visualization cell fails (e.g., no categorical columns): catch gracefully with informative message, continue to next section
 
 
@@ -818,10 +969,13 @@ Before stopping:
 2. Update the **Phase 4 Summary table** row for this notebook
 3. Fill the **Phase 4.N** detail section with:
    - Status, timestamps
+   - Resolved source-prefixed notebook path and data_source
    - Session info (ID, reused or new)
    - Cells executed, errors fixed, cells skipped
-   - Output table stats
+   - Output table/file locations, formats, and stats; update artifact_locations
    - Errors encountered
+   - For Notebook 04: interpretation report path, context/review checkpoint IDs, per-cluster
+     review status, and unresolved limitations (or the explicit Not applicable reason)
 4. Update the "Last Updated" timestamp
 5. Save the updated completion report
 
@@ -840,7 +994,7 @@ For notebooks 01-04:
 | Output Table | <scenario_name>_<suffix> (<Y> rows) |
 
 **Notebook saved to:**
-`<output_folder>/Fabric 0<N> <NotebookName>.ipynb`
+`<output_folder>/<notebook_prefix> 0<N> <NotebookName>.ipynb`
 
 ---
 

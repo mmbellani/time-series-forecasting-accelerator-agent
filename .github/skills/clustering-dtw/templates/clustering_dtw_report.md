@@ -2,6 +2,31 @@
 
 _Generated: {{DATE}} · Metric: {{METRIC}} · Sakoe-Chiba radius: {{SAKOE_CHIBA_RADIUS}} · Winsor limits: {{WINSOR_LIMITS}}_
 
+**Save as:** `{{OUTPUT_FOLDER}}/clustering_interpretation/regular_cluster_interpretation.md`
+**Review status:** {{DRAFT_REVIEWED_PARTIAL_BLOCKED_OR_NOT_APPLICABLE}}
+**Data source / notebook:** {{DATA_SOURCE}} / {{SOURCE_PREFIXED_NOTEBOOK_NAME}}
+**Input / membership artifacts:** {{INPUT_LOCATION}} / {{CLUSTER_MEMBERSHIP_LOCATION}}
+**Analysis window / frequency / units:** {{START_DATE}} to {{END_DATE}} / {{FREQUENCY}} / {{UNITS}}
+
+## Business context and checkpoint record
+
+**Known context:** {{SCENARIO_EDA_AND_PRIOR_CHECKPOINT_CONTEXT}}
+**Confirmed context:** {{ENTITY_MEANING_GEOGRAPHY_SEGMENTS_CALENDAR_OPERATIONS}}
+**Unknowns and limitations:** {{MISSING_CONTEXT_AND_DATA_LIMITATIONS}}
+**Decision this interpretation supports:** {{BUSINESS_DECISION}}
+
+| Checkpoint | Questions asked | Data-scientist answers / decisions | Status |
+|------------|-----------------|-----------------------------------|--------|
+| 4.4-context | {{TARGETED_CONTEXT_QUESTIONS}} | {{ANSWERS}} | {{STATUS}} |
+| 4.4-review | {{PER_CLUSTER_REVIEW_QUESTIONS}} | {{DECISIONS}} | {{STATUS}} |
+
+**Completion-report checkpoint references:** {{CHECKPOINT_LINKS_OR_STANDALONE}}
+
+> Ask only unresolved questions, one at a time. Save this report as Draft before the
+> review checkpoint. Do not invent answers or mark an unreviewed interpretation accepted.
+> If no regular series exist or clustering is skipped, state Not applicable with the
+> reason and observed profile counts; omit inapplicable cluster/model sections.
+
 ## 1. Summary
 
 - **Method:** Dynamic Time Warping (DTW) clustering via `tslearn`
@@ -38,6 +63,48 @@ with how the series were clustered.
 
 - **Total regular series clustered:** {{N_REGULAR}}
 - **Notes on cluster shapes / potential drivers:** {{SHAPE_NOTES}}
+
+### Interpretation overview (every regular cluster)
+
+| Cluster ID | Regular series (n, %) | Observed pattern | Proposed business interpretation | Confidence / rationale | Review status |
+|------------|-----------------------|------------------|----------------------------------|------------------------|---------------|
+| {{CLUSTER_ID}} | {{N_AND_SHARE}} | {{MEASURED_PATTERN}} | {{HYPOTHESIS_OR_NEUTRAL_LABEL}} | {{CONFIDENCE_AND_EVIDENCE}} | {{DRAFT_ACCEPTED_REVISED_OR_UNRESOLVED}} |
+
+### Cluster {{CLUSTER_ID}}: {{PROPOSED_LABEL}}
+
+<!-- Repeat this entire section for every actual regular cluster, not just the largest. -->
+
+- **Membership and coverage:** {{N_SERIES_SHARE_DATE_RANGE_AND_MISSINGNESS}}
+- **Representative members and selection method:** {{SERIES_IDS_AND_SELECTION_RULE}}
+- **Observed shape:** {{TREND_SEASONALITY_PEAKS_TROUGHS_AND_WITHIN_CLUSTER_VARIATION}}
+- **Original-unit magnitude:** {{LEVEL_AND_SPREAD_NOT_FROM_STANDARDIZED_CENTROIDS}}
+- **Verified metadata composition:** {{SEGMENT_COUNTS_SHARES_OR_UNAVAILABLE}}
+
+| Evidence / comparison | Measurement | Baseline / period | Sample counts / repeated events | Caveats |
+|-----------------------|-------------|-------------------|--------------------------------|---------|
+| {{CALENDAR_OR_SEGMENT_PATTERN}} | {{VALUE_AND_UNITS}} | {{EXPLICIT_BASELINE}} | {{COUNTS}} | {{LIMITATIONS}} |
+
+![Representative members on original dates]({{RELATIVE_MEMBER_CHART_PATH}})
+![Calendar pattern at the observed frequency]({{RELATIVE_CALENDAR_CHART_PATH}})
+
+**Interpretation:** {{BUSINESS_HYPOTHESIS_SEPARATE_FROM_OBSERVATIONS}}
+
+**Supporting confirmed context:** {{DATA_SCIENTIST_ANSWERS_OR_METADATA}}
+
+**Alternative explanations / counterexamples:** {{HETEROGENEITY_AND_COMPETING_EXPLANATIONS}}
+
+**Confidence and limitations:** {{RATIONALE_AND_MISSING_EVIDENCE}}
+
+**Open clarifying questions:** {{TARGETED_QUESTIONS_OR_NONE}}
+
+**Potential forecasting implications (recommendations only):** {{FEATURE_OR_SEGMENT_IDEAS}}
+
+**Data-scientist review:** {{ACCEPTED_REVISED_OR_UNRESOLVED_WITH_CORRECTIONS_AND_DATE}}
+
+> Business labels do not change cluster IDs or `profile_cluster`. DTW warping may
+> align different calendar dates; verify holiday claims on original timestamps.
+> Standardized/winsorized shapes cannot establish volume, event extremes, or customer
+> identity. Observations and user acceptance do not prove causality.
 
 ## 4. Output contract
 

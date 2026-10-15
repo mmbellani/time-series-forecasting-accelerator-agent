@@ -6,8 +6,8 @@
 **Target:** {{TARGET}} ({{UNIT}})
 **Series evaluated:** {{N_SERIES}} • **Points evaluated:** {{N_POINTS}}
 
-> Run **after** the `forecast-explainability` report. This report says *where/when* the
-> forecast is wrong; the explainability report says *why the model produced that value*.
+> Run **before** `forecast-explainability`. This report identifies *where/when* the
+> forecast is wrong and selects the points whose model drivers should be explained next.
 
 ---
 
@@ -54,6 +54,23 @@ Each metric is broken down across calendar variables and shown as a **box-plot o
 error distribution** — this exposes spread, skew, and outliers, not just the average.
 
 ### 3.1 MAE — magnitude of misses
+
+**Data frequency:** {{DATA_FREQUENCY}} • **Frequency-matched grouping:** {{FREQUENCY_BUCKET}}
+
+![MAE error distribution matched to data frequency](img/{{SCENARIO}}_mae_by_frequency.png)
+
+*Required source:* `error_boxplot(errors, by="{{FREQUENCY_BUCKET}}", metric="MAE")`.
+Use `dayofweek` for daily data, `week` (ISO week of year) for weekly data, `month` for
+monthly data, `quarter` for quarterly data, and `year` for annual data. For subdaily
+data, derive an `hour` column and group by hour of day. Confirm ambiguous or custom
+frequencies; report mixed-frequency groups separately.
+
+Each box shows per-observation absolute errors in target units, not pre-aggregated
+MAE values. Include bucket counts and MAE from
+`metrics_by_calendar(errors, by="{{FREQUENCY_BUCKET}}")` in the table below, and note
+sparse or single-observation buckets. Set `{{BY}}` to `{{FREQUENCY_BUCKET}}`.
+
+**Additional calendar views (optional):**
 
 ![MAE by month](img/{{SCENARIO}}_mae_by_month.png)
 ![MAE grid](img/{{SCENARIO}}_mae_grid.png)

@@ -1,0 +1,110 @@
+site_name: Time Series Forecasting Accelerator Agent
+site_description: A production-ready pipeline for forecasting multiple time series on Microsoft Fabric and Databricks.
+site_author: Marina Bellani
+site_url: https://mmbellani.github.io/time-series-forecasting-accelerator-agent/
+repo_url: https://github.com/mmbellani/time-series-forecasting-accelerator-agent
+repo_name: mmbellani/time-series-forecasting-accelerator-agent
+edit_uri: edit/main/docs_site/
+# Separate folder so the existing docs/ (design docs) and wiki/ stay untouched
+docs_dir: docs_site
+
+theme:
+  name: material
+  icon:
+    logo: material/chart-timeline-variant
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: teal
+      toggle: {icon: material/weather-night, name: Switch to dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: teal
+      toggle: {icon: material/weather-sunny, name: Switch to light mode}
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+
+plugins:
+  - search
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc: {permalink: true}
+  - pymdownx.details
+  - pymdownx.highlight: {anchor_linenums: true}
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed: {alternate_style: true}
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex: {generic: true}
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - getting-started/index.md
+      - Installation: getting-started/installation.md
+      - Data Requirements: getting-started/data.md
+      - Running the Pipeline: getting-started/running.md
+  - Pipeline:
+      - pipeline/index.md
+      - 01 · Data Preparation: pipeline/01-data-preparation.md
+      - 02 · EDA: pipeline/02-eda.md
+      - 03 · Profiling: pipeline/03-profiling.md
+      - 04 · Clustering: pipeline/04-clustering.md
+      - 05 · Feature Engineering: pipeline/05-feature-engineering.md
+      - 06 · Train / Test / Select / Tune: pipeline/06-train-tune.md
+  - Methodology:
+      - methodology/index.md
+      - Intermittent Series: methodology/intermittent.md
+      - Nixtla Framework: methodology/nixtla.md
+      - Validation & Errors: methodology/validation.md
+  - Agent:
+      - agent/index.md
+  - Skills:
+      - skills/index.md
+      - Alternative Clustering:
+          - DTW Clustering: skills/clustering-dtw.md
+      - Alternative Models:
+          - Moving Average: skills/forecasting-moving-average.md
+          - Prophet: skills/forecasting-prophet.md
+          - Intermittent / Croston: skills/forecasting-intermittent.md
+          - Chronos-2: skills/forecasting-chronos2.md
+      - Diagnostics:
+          - Forecast Explainability: skills/forecast-explainability.md
+          - Error Analysis: skills/error-analysis.md
+          - Hierarchical Reconciliation: skills/hierarchical-reconciliation.md
+  - Demos:
+      - demo/index.md
+  - Library Reference: reference.md
+  - Contributing: contributing.md

@@ -1,11 +1,11 @@
 ---
 name: hierarchical-reconciliation
-description: "Reconcile time-series forecasts across a user-defined hierarchy and diagnose how base forecasts compose the aggregate and how errors propagate up. USE FOR: hierarchical forecasting, forecast reconciliation, bottom-up aggregation, roll up forecasts, aggregate forecast, forecast by region/segment/product/category, which nodes drive the total, contribution to aggregate, coherence, error propagation, do errors cancel or reinforce, error by level, aggregate bias vs base bias, waterfall of forecast contributions, aggregation charts. FIRST asks the data scientist which columns are the hierarchical levels and at which level to aggregate, then charts the roll-up. Built for the LightGBM + mlforecast pipeline (notebook 06 Train/Tune) that produces per-series base forecasts in <scenario>_forecasts (unique_id, ds, y, y_hat_*). RUN AFTER forecast-explainability (why did a base node forecast that?) and error-analysis (where/when is a series wrong?): this skill lifts both to the aggregate. DO NOT USE FOR: computing feature importance for one model (use forecast-explainability), scoring a single series' accuracy by calendar (use error-analysis), training/tuning models (use notebook 06), feature engineering (use notebook 05), clustering (use notebook 04)."
+description: "Reconcile time-series forecasts across a user-defined hierarchy and diagnose how base forecasts compose the aggregate and how errors propagate up. USE FOR: hierarchical forecasting, forecast reconciliation, bottom-up aggregation, roll up forecasts, aggregate forecast, forecast by region/segment/product/category, which nodes drive the total, contribution to aggregate, coherence, error propagation, do errors cancel or reinforce, error by level, aggregate bias vs base bias, waterfall of forecast contributions, aggregation charts. FIRST asks the data scientist which columns are the hierarchical levels and at which level to aggregate, then charts the roll-up. Built for the LightGBM + mlforecast pipeline (notebook 06 Train/Tune) that produces per-series base forecasts in <scenario>_forecasts (unique_id, ds, y, y_hat_*). RUN AFTER error-analysis (where/when is a series wrong?) and then forecast-explainability (why did a base node forecast that?): this skill lifts both to the aggregate. DO NOT USE FOR: computing feature importance for one model (use forecast-explainability), scoring a single series' accuracy by calendar (use error-analysis), training/tuning models (use notebook 06), feature engineering (use notebook 05), clustering (use notebook 04)."
 license: MIT
 metadata:
   author: Time Series Forecasting Accelerator
   version: "1.0.0"
-  runs_after: [forecast-explainability, error-analysis]
+  runs_after: [error-analysis, forecast-explainability]
 ---
 
 # Hierarchical-Reconciliation Skill
@@ -40,12 +40,12 @@ Then run `describe_hierarchy(df, levels)` and `validate_hierarchy(df, levels)` a
 node counts / nesting back to the user for confirmation. Do not proceed until the levels
 and target level are confirmed — the whole analysis depends on them.
 
-## Run this AFTER `forecast-explainability` and `error-analysis`
+## Run this AFTER `error-analysis` and then `forecast-explainability`
 
 ```mermaid
 flowchart LR
-    A[forecast-explainability<br/>why did a base node forecast that?] --> C
-    B[error-analysis<br/>where/when is a base series wrong?] --> C
+    A[error-analysis<br/>where/when is a base series wrong?] --> B[forecast-explainability<br/>why did a base node forecast that?]
+    B --> C
     C[hierarchical-reconciliation<br/>ask levels + aggregation level] --> D[aggregate roll-up + charts]
     D --> E[composition: which nodes drive the total]
     D --> F[error propagation: cancel vs reinforce]
